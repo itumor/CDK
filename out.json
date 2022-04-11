@@ -1,0 +1,271 @@
+{
+    "ProvisionedProducts": [
+        {
+            "Name": "sct-cdk-support-iam",
+            "Arn": "arn:aws:servicecatalog:eu-central-1:600027353764:stack/sct-cdk-support-iam/pp-xcghrwpgfqq2k",
+            "Type": "CFN_STACK",
+            "Id": "pp-xcghrwpgfqq2k",
+            "Status": "AVAILABLE",
+            "CreatedTime": "2022-01-17T15:06:34.048000+02:00",
+            "IdempotencyToken": "b640314d-e985-4677-a74f-7795eeadc56c",
+            "LastRecordId": "rec-3iulvb42frzva",
+            "LastProvisioningRecordId": "rec-3iulvb42frzva",
+            "LastSuccessfulProvisioningRecordId": "rec-3iulvb42frzva",
+            "Tags": [
+                {
+                    "Key": "aws:servicecatalog:productArn",
+                    "Value": "arn:aws:catalog:eu-central-1:469508902611:product/prod-4amrouzdchfmk"
+                },
+                {
+                    "Key": "aws:servicecatalog:provisioningPrincipalArn",
+                    "Value": "arn:aws:sts::600027353764:assumed-role/PuppetRole/600027353764-eu-central-1-PuppetRole"
+                },
+                {
+                    "Key": "launch_name",
+                    "Value": "sct-cdk-support-iam"
+                },
+                {
+                    "Key": "aws:servicecatalog:provisioningArtifactIdentifier",
+                    "Value": "pa-fnr6rwsvzw2om"
+                },
+                {
+                    "Key": "version",
+                    "Value": "v1"
+                },
+                {
+                    "Key": "aws:servicecatalog:portfolioArn",
+                    "Value": "arn:aws:catalog:eu-central-1:469508902611:portfolio/port-v2szwfrckjvmy"
+                },
+                {
+                    "Key": "ServiceCatalogPuppet:Actor",
+                    "Value": "Generated"
+                },
+                {
+                    "Key": "aws:servicecatalog:provisionedProductArn",
+                    "Value": "arn:aws:servicecatalog:eu-central-1:600027353764:stack/sct-cdk-support-iam/pp-xcghrwpgfqq2k"
+                }
+            ],
+            "PhysicalId": "arn:aws:cloudformation:eu-central-1:600027353764:stack/SC-600027353764-pp-xcghrwpgfqq2k/4c1b73b0-7796-11ec-b7e9-060181288dce",
+            "ProductId": "prod-4amrouzdchfmk",
+            "ProductName": "sct-cdk-support-iam",
+            "ProvisioningArtifactId": "pa-fnr6rwsvzw2om",
+            "ProvisioningArtifactName": "v1",
+            "UserArn": "arn:aws:sts::600027353764:assumed-role/PuppetRole",
+            "UserArnSession": "arn:aws:sts::600027353764:assumed-role/PuppetRole/600027353764-eu-central-1-PuppetRole"
+        },
+        {
+            "Name": "sct-cdk-support-bootstrap",
+            "Arn": "arn:aws:servicecatalog:eu-central-1:600027353764:stack/sct-cdk-support-bootstrap/pp-ggglimodba2fm",
+            "Type": "CFN_STACK",
+            "Id": "pp-ggglimodba2fm",
+            "Status": "AVAILABLE",
+            "CreatedTime": "2022-01-17T15:07:16.534000+02:00",
+            "IdempotencyToken": "b607da65-03f8-4a76-85ea-2b3d4781a4e2",
+            "LastRecordId": "rec-42mkp67zbpq46",
+            "LastProvisioningRecordId": "rec-42mkp67zbpq46",
+            "LastSuccessfulProvisioningRecordId": "rec-42mkp67zbpq46",
+            "Tags": [
+                {
+                    "Key": "aws:servicecatalog:productArn",
+                    "Value": "arn:aws:catalog:eu-central-1:469508902611:product/prod-owne4g7pugdzs"
+                },
+                {
+                    "Key": "aws:servicecatalog:provisioningPrincipalArn",
+                    "Value": "arn:aws:sts::600027353764:assumed-role/PuppetRole/600027353764-eu-central-1-PuppetRole"
+                },
+                {
+                    "Key": "launch_name",
+                    "Value": "sct-cdk-support-bootstrap"
+                },
+                {
+                    "Key": "aws:servicecatalog:provisioningArtifactIdentifier",
+                    "Value": "pa-u62ihsjkpibxy"
+                },
+                {
+                    "Key": "version",
+                    "Value": "v1"
+                },
+                {
+                    "Key": "aws:servicecatalog:portfolioArn",
+                    "Value": "arn:aws:catalog:eu-central-1:469508902611:portfolio/port-v2szwfrckjvmy"
+                },
+                {
+                    "Key": "ServiceCatalogPuppet:Actor",
+                    "Value": "Generated"
+                },
+                {
+                    "Key": "aws:servicecatalog:provisionedProductArn",
+                    "Value": "arn:aws:servicecatalog:eu-central-1:600027353764:stack/sct-cdk-support-bootstrap/pp-ggglimodba2fm"
+                }
+            ],
+            "PhysicalId": "arn:aws:cloudformation:eu-central-1:600027353764:stack/SC-600027353764-pp-ggglimodba2fm/655f0ad0-7796-11ec-8953-02c3eb604e26",
+            "ProductId": "prod-owne4g7pugdzs",
+            "ProductName": "sct-cdk-support-bootstrap",
+            "ProvisioningArtifactId": "pa-u62ihsjkpibxy",
+            "ProvisioningArtifactName": "v1",
+            "UserArn": "arn:aws:sts::600027353764:assumed-role/PuppetRole",
+            "UserArnSession": "arn:aws:sts::600027353764:assumed-role/PuppetRole/600027353764-eu-central-1-PuppetRole"
+        },
+        {
+            "Name": "myproduct",
+            "Arn": "arn:aws:servicecatalog:eu-central-1:600027353764:stack/myproduct/pp-7bgdpdktasmxm",
+            "Type": "CFN_STACK",
+            "Id": "pp-7bgdpdktasmxm",
+            "Status": "ERROR",
+            "StatusMessage": "AmazonCloudFormationException  ParameterValue for ParameterKey uploadBucketName is required (Service: AmazonCloudFormation; Status Code: 400; Error Code: ValidationError; Request ID: 6d7b6ece-c26e-49c4-aa13-178d5d14636e; Proxy: null)",
+            "CreatedTime": "2022-03-31T19:57:25.552000+03:00",
+            "IdempotencyToken": "0bb120d7-fe3b-4eda-8360-52dabf33ea12",
+            "LastRecordId": "rec-jljzpagaiden4",
+            "LastProvisioningRecordId": "rec-jljzpagaiden4",
+            "Tags": [
+                {
+                    "Key": "aws:servicecatalog:productArn",
+                    "Value": "arn:aws:catalog:eu-central-1:600027353764:product/prod-mh3qjb6aqevjm"
+                },
+                {
+                    "Key": "aws:servicecatalog:provisioningPrincipalArn",
+                    "Value": "arn:aws:iam::600027353764:user/cdk-workshop"
+                },
+                {
+                    "Key": "aws:servicecatalog:provisioningArtifactIdentifier",
+                    "Value": "pa-pm2s3e36cazc6"
+                },
+                {
+                    "Key": "aws:servicecatalog:portfolioArn",
+                    "Value": "arn:aws:catalog:eu-central-1:600027353764:portfolio/port-qh575avpe4kd6"
+                },
+                {
+                    "Key": "aws:servicecatalog:provisionedProductArn",
+                    "Value": "arn:aws:servicecatalog:eu-central-1:600027353764:stack/myproduct/pp-7bgdpdktasmxm"
+                }
+            ],
+            "ProductId": "prod-mh3qjb6aqevjm",
+            "ProductName": "myproduct",
+            "ProvisioningArtifactId": "pa-pm2s3e36cazc6",
+            "ProvisioningArtifactName": "v1",
+            "UserArn": "arn:aws:iam::600027353764:user/cdk-workshop",
+            "UserArnSession": "arn:aws:iam::600027353764:user/cdk-workshop"
+        },
+        {
+            "Name": "myproduct4",
+            "Arn": "arn:aws:servicecatalog:eu-central-1:600027353764:stack/myproduct4/pp-addggacmeui2i",
+            "Type": "CFN_STACK",
+            "Id": "pp-addggacmeui2i",
+            "Status": "ERROR",
+            "StatusMessage": "AmazonCloudFormationException  ParameterValue for ParameterKey uploadBucketName is required (Service: AmazonCloudFormation; Status Code: 400; Error Code: ValidationError; Request ID: 2d37ec12-0bbf-4bea-b310-f45e96f52b36; Proxy: null)",
+            "CreatedTime": "2022-03-31T20:08:10.508000+03:00",
+            "IdempotencyToken": "d8947b78-11a4-4e3d-be0e-6c455b78dbd3",
+            "LastRecordId": "rec-vw6g5utalkese",
+            "LastProvisioningRecordId": "rec-vw6g5utalkese",
+            "Tags": [
+                {
+                    "Key": "aws:servicecatalog:productArn",
+                    "Value": "arn:aws:catalog:eu-central-1:600027353764:product/prod-mh3qjb6aqevjm"
+                },
+                {
+                    "Key": "aws:servicecatalog:provisioningPrincipalArn",
+                    "Value": "arn:aws:iam::600027353764:user/cdk-workshop"
+                },
+                {
+                    "Key": "aws:servicecatalog:provisioningArtifactIdentifier",
+                    "Value": "pa-pm2s3e36cazc6"
+                },
+                {
+                    "Key": "aws:servicecatalog:portfolioArn",
+                    "Value": "arn:aws:catalog:eu-central-1:600027353764:portfolio/port-qh575avpe4kd6"
+                },
+                {
+                    "Key": "aws:servicecatalog:provisionedProductArn",
+                    "Value": "arn:aws:servicecatalog:eu-central-1:600027353764:stack/myproduct4/pp-addggacmeui2i"
+                }
+            ],
+            "ProductId": "prod-mh3qjb6aqevjm",
+            "ProductName": "myproduct",
+            "ProvisioningArtifactId": "pa-pm2s3e36cazc6",
+            "ProvisioningArtifactName": "v1",
+            "UserArn": "arn:aws:iam::600027353764:user/cdk-workshop",
+            "UserArnSession": "arn:aws:iam::600027353764:user/cdk-workshop"
+        },
+        {
+            "Name": "myproduct3",
+            "Arn": "arn:aws:servicecatalog:eu-central-1:600027353764:stack/myproduct3/pp-eqo4pb3omoe72",
+            "Type": "CFN_STACK",
+            "Id": "pp-eqo4pb3omoe72",
+            "Status": "ERROR",
+            "StatusMessage": "AmazonCloudFormationException  ParameterValue for ParameterKey uploadBucketName is required (Service: AmazonCloudFormation; Status Code: 400; Error Code: ValidationError; Request ID: a47973b4-35ff-40fe-91d1-68c2bd77d5d5; Proxy: null)",
+            "CreatedTime": "2022-03-31T20:06:57.806000+03:00",
+            "IdempotencyToken": "730e997e-be42-4ed1-84c0-0d13ba182d4a",
+            "LastRecordId": "rec-vxjy36cbznuy6",
+            "LastProvisioningRecordId": "rec-vxjy36cbznuy6",
+            "Tags": [
+                {
+                    "Key": "aws:servicecatalog:productArn",
+                    "Value": "arn:aws:catalog:eu-central-1:600027353764:product/prod-mh3qjb6aqevjm"
+                },
+                {
+                    "Key": "aws:servicecatalog:provisioningPrincipalArn",
+                    "Value": "arn:aws:iam::600027353764:user/cdk-workshop"
+                },
+                {
+                    "Key": "aws:servicecatalog:provisioningArtifactIdentifier",
+                    "Value": "pa-pm2s3e36cazc6"
+                },
+                {
+                    "Key": "aws:servicecatalog:portfolioArn",
+                    "Value": "arn:aws:catalog:eu-central-1:600027353764:portfolio/port-qh575avpe4kd6"
+                },
+                {
+                    "Key": "aws:servicecatalog:provisionedProductArn",
+                    "Value": "arn:aws:servicecatalog:eu-central-1:600027353764:stack/myproduct3/pp-eqo4pb3omoe72"
+                }
+            ],
+            "ProductId": "prod-mh3qjb6aqevjm",
+            "ProductName": "myproduct",
+            "ProvisioningArtifactId": "pa-pm2s3e36cazc6",
+            "ProvisioningArtifactName": "v1",
+            "UserArn": "arn:aws:iam::600027353764:user/cdk-workshop",
+            "UserArnSession": "arn:aws:iam::600027353764:user/cdk-workshop"
+        },
+        {
+            "Name": "myproduct5",
+            "Arn": "arn:aws:servicecatalog:eu-central-1:600027353764:stack/myproduct5/pp-kxniofpg64z7m",
+            "Type": "CFN_STACK",
+            "Id": "pp-kxniofpg64z7m",
+            "Status": "ERROR",
+            "StatusMessage": "AmazonCloudFormationException  ParameterValue for ParameterKey uploadBucketName Value=bucket99261 Key=bucketarchivedays Value=150 Key=BootstrapVersion Value=/cdk-bootstrap/hnb659fds/version is required (Service: AmazonCloudFormation; Status Code: 400; Error Code: ValidationError; Request ID: cbb49807-70f9-44f9-9e89-9335e983a171; Proxy: null)",
+            "CreatedTime": "2022-03-31T20:17:26.788000+03:00",
+            "IdempotencyToken": "dc155576-1ad9-45c1-b1f5-4c4833a4ed51",
+            "LastRecordId": "rec-eccq7c6r76urk",
+            "LastProvisioningRecordId": "rec-eccq7c6r76urk",
+            "Tags": [
+                {
+                    "Key": "aws:servicecatalog:productArn",
+                    "Value": "arn:aws:catalog:eu-central-1:600027353764:product/prod-mh3qjb6aqevjm"
+                },
+                {
+                    "Key": "aws:servicecatalog:provisioningPrincipalArn",
+                    "Value": "arn:aws:iam::600027353764:user/cdk-workshop"
+                },
+                {
+                    "Key": "aws:servicecatalog:provisioningArtifactIdentifier",
+                    "Value": "pa-pm2s3e36cazc6"
+                },
+                {
+                    "Key": "aws:servicecatalog:portfolioArn",
+                    "Value": "arn:aws:catalog:eu-central-1:600027353764:portfolio/port-qh575avpe4kd6"
+                },
+                {
+                    "Key": "aws:servicecatalog:provisionedProductArn",
+                    "Value": "arn:aws:servicecatalog:eu-central-1:600027353764:stack/myproduct5/pp-kxniofpg64z7m"
+                }
+            ],
+            "ProductId": "prod-mh3qjb6aqevjm",
+            "ProductName": "myproduct",
+            "ProvisioningArtifactId": "pa-pm2s3e36cazc6",
+            "ProvisioningArtifactName": "v1",
+            "UserArn": "arn:aws:iam::600027353764:user/cdk-workshop",
+            "UserArnSession": "arn:aws:iam::600027353764:user/cdk-workshop"
+        }
+    ],
+    "TotalResultsCount": 6
+}
