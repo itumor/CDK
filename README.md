@@ -49,17 +49,20 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
     `--provisioned-product-name "myproduct" \`
     `--provisioning-parameters  Key=uploadBucketName Value=bucket99261 Key=bucketarchivedays Value=150 Key=BootstrapVersion Value=/cdk-bootstrap/hnb659fds/version`
 
->  provisioningParameters: [{
->            key: 'uploadBucketName',
->            value: 'Bucket99261',
->          },{
->            key: 'bucketarchivedays',
->            value: '150',
->          },
->          {
->            key: 'BootstrapVersion',
->            value: '/cdk-bootstrap/hnb659fds/version',
->          }
+```
+  provisioningParameters: [{
+            key: 'uploadBucketName',
+            value: 'Bucket99261',
+          },{
+            key: 'bucketarchivedays',
+            value: '150',
+          },
+          {
+            key: 'BootstrapVersion',
+            value: '/cdk-bootstrap/hnb659fds/version',
+          }
+```
+
 
 * `aws servicecatalog describe-provisioning-parameters \`
 * `--product-id prod-mh3qjb6aqevjm \`
