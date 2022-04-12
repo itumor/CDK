@@ -1,7 +1,7 @@
 # Welcome to your CDK TypeScript project
 
 You should explore the contents of this project. It demonstrates a CDK app with an instance of a stack (`CdkParametersStack`)
-which contains an Amazon SQS queue that is subscribed to an Amazon SNS topic.
+(`CdkservicecatalogStack`), (`CdkOpenSearchStack`) and (`CdkservicecatalogProvisionedProductStack`)
 
 The `cdk.json` file tells the CDK Toolkit how to execute your app.
 
@@ -69,3 +69,92 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 * `--provisioning-artifact-name "v1"`
 * `aws servicecatalog  search-provisioned-products   --filters FullTextSearch=myproduct`
 * `aws servicecatalog  search-provisioned-products   > out.json`   
+
+# opensearch service inputs 
+```
+--domain-name (string)
+--engine-version (string)
+--cluster-config (structure)
+	nstanceType -> (string)
+	InstanceCount -> (integer)
+        DedicatedMasterEnabled -> (boolean)
+        ZoneAwarenessEnabled -> (boolean)
+        ZoneAwarenessConfig -> (structure)
+                AvailabilityZoneCount -> (integer)
+        DedicatedMasterType
+        DedicatedMasterCount
+        WarmEnabled
+        WarmType
+      	WarmCount
+	ColdStorageOptions
+		Enabled -> (boolean)
+--ebs-options (structure)
+	EBSEnabled -> (boolean)
+	VolumeType -> (string)
+	VolumeSize -> (integer)
+	Iops -> (integer)
+--access-policies 
+--snapshot-options
+	AutomatedSnapshotStartHour -> (integer)
+--vpc-options
+	SubnetIds -> (list)
+        SecurityGroupIds -> (list)
+--cognito-options
+	Enabled -> (boolean)
+	UserPoolId -> (string)
+	IdentityPoolId -> (string)
+	RoleArn -> (string)
+--encryption-at-rest-options
+	Enabled -> (boolean)
+	KmsKeyId -> (string)
+--node-to-node-encryption-options 
+	Enabled -> (boolean)
+--advanced-options (map)
+	key -> (string)
+	value -> (string)
+--log-publishing-options (map)
+	key -> (string)
+	value -> (structure)
+		CloudWatchLogsLogGroupArn -> (string)
+		Enabled -> (boolean)
+--domain-endpoint-options (structure)
+	EnforceHTTPS -> (boolean)
+	TLSSecurityPolicy -> (string)
+	CustomEndpointEnabled -> (boolean)
+	CustomEndpoint -> (string)
+	CustomEndpointCertificateArn -> (string)
+--advanced-security-options (structure)
+	Enabled -> (boolean)
+	InternalUserDatabaseEnabled -> (boolean)
+	MasterUserOptions -> (structure)
+		MasterUserARN -> (string)
+		MasterUserName -> (string)
+		MasterUserPassword -> (string)
+	SAMLOptions -> (structure)
+		Enabled -> (boolean)
+		Idp -> (structure)
+			MetadataContent -> (string)
+			EntityId -> (string)
+		MasterUserName -> (string)
+		MasterBackendRole -> (string)
+		SubjectKey -> (string)
+		RolesKey -> (string)
+		SessionTimeoutMinutes -> (integer)
+	AnonymousAuthEnabled -> (boolean)
+--tag-list (list)
+	Key -> (string)
+	Value -> (string)
+--auto-tune-options (structure)
+	DesiredState -> (string)
+	MaintenanceSchedules -> (list)
+		StartAt -> (timestamp)
+		Duration -> (structure)
+			Value -> (long)
+			Unit -> (string)
+		CronExpressionForRecurrence -> (string)
+
+```
+
+https://docs.aws.amazon.com/cli/latest/reference/opensearch/create-domain.html
+
+https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-opensearchservice-domain.html
