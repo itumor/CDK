@@ -1,0 +1,330 @@
+AWSTemplateFormatVersion: 2010-09-09
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+    -
+      Label:
+        default: 'RDS PARAMETERS'
+      Parameters:
+      - DBInstanceName
+      - DBSchemaName
+      - DBSize
+      - DBVersion
+      - DeletionProtection
+      - MultiAZ
+      - PreferredBackupWindow
+      - PreferredMaintenanceWindow
+      - DBSecurityGroup
+      - SubnetIds
+
+Parameters:
+  DBSize:
+    Description: >-
+      T-shirt size of the RDS instance regarding vCPU, memory, storage and
+      networking
+    Type: String
+    AllowedValues:
+      - micro
+      - small
+      - medium
+      - large
+      - large-mem
+      - xlarge
+      - xlarge-mem
+      - 2xlarge
+      - 2xlarge-mem
+  DBVersion:
+    Default: '10.5'
+    Description: MariaDB Version
+    Type: String
+    AllowedValues:
+      - '10.4'
+      - '10.5'
+      - '10.6'
+  DBSchemaName:
+    Default: main
+    Description: Initial database schema name
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: must begin with a letter and contain only alphanumeric characters.
+  DBInstanceName:
+    Description: RDS instance name
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+  DBSecurityGroup:
+    Description: >-
+      Specify the security group to be used by RDS, if not provide a default will get created
+    Type: String
+    Default: ''
+  MultiAZ:
+    Description: >-
+      Specify whether the instance is to be deployed in multiple availability
+      zones (high availability, recommended for production)
+    Type: String
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    ConstraintDescription: must be true or false.
+  SubnetIds:
+    Description: >-
+      List of subnets in which the instance is to be placed; at least two
+      required
+    Type: 'List<AWS::EC2::Subnet::Id>'
+  PreferredBackupWindow:
+    Default: '00:15-01:00'
+    Description: >-
+      The daily time range during which automated backups are created, specified
+      in UTC; at least 30 minutes required; must not overlap with maintenance
+      window
+    Type: String
+  PreferredMaintenanceWindow:
+    Default: 'Sun:01:15-Sun:03:00'
+    Description: >-
+      The weekly time range during which system maintenance and minor version
+      upgrades can occur, in UTC; at least one hour required; must not overlap
+      with backup window
+    Type: String
+  PSsmEnvironment:
+    Description: Environment from the SSM parameter
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Default: /platform/account/env
+    AllowedValues:
+      - /platform/account/env
+  DeletionProtection:
+    Default: true
+    Description: enable database to be protected from accidental deletion
+    Type: String
+    AllowedValues:
+      - true
+      - false
+  KMSArnForSecretManager:
+    Type: String
+    Description: Enter KMS key (symmetric) arn (Format arn:aws:kms:<region>:<account-ID>:key/<key-id>) to be used for encrypting secrets
+    ConstraintDescription: format should be arn:aws:kms:<region>:<account-ID>:key/<key-id>
+    AllowedPattern: (^arn\:aws\:kms\:.+)
+  KMSArnForDB:
+    Type: String
+    Description: Enter KMS key (symmetric) arn (Format arn:aws:kms:<region>:<account-ID>:key/<key-id>) to be used for encrypting DB
+    ConstraintDescription: format should be arn:aws:kms:<region>:<account-ID>:key/<key-id>
+    AllowedPattern: (^arn\:aws\:kms\:.+)
+
+Conditions:
+  IS-No-SG: !Equals 
+    - !Ref DBSecurityGroup
+    - ""
+
+  IS-SG: !Not [!Equals [!Ref DBSecurityGroup, ""]]
+
+Mappings:
+  Plans:
+    micro:
+      Instance: db.t4g.micro
+      StorageType: gp2
+      MinStorage: 20
+      MaxStorage: 100
+    small:
+      Instance: db.t4g.small
+      StorageType: gp2
+      MinStorage: 20
+      MaxStorage: 200
+    medium:
+      Instance: db.t4g.medium
+      StorageType: gp2
+      MinStorage: 20
+      MaxStorage: 400
+    large:
+      Instance: db.m6g.large
+      StorageType: gp2
+      MinStorage: 100
+      MaxStorage: 1000
+    large-mem:
+      Instance: db.r6g.large
+      StorageType: gp2
+      MinStorage: 100
+      MaxStorage: 1000
+    xlarge:
+      Instance: db.m6g.xlarge
+      StorageType: gp2
+      MinStorage: 100
+      MaxStorage: 2000
+    xlarge-mem:
+      Instance: db.r6g.xlarge
+      StorageType: gp2
+      MinStorage: 100
+      MaxStorage: 2000
+    2xlarge:
+      Instance: db.m6g.2xlarge
+      StorageType: gp2
+      MinStorage: 100
+      MaxStorage: 4000
+    2xlarge-mem:
+      Instance: db.r6g.2xlarge
+      StorageType: gp2
+      MinStorage: 100
+      MaxStorage: 4000
+
+Resources:
+  DBSecret:
+    Type: 'AWS::SecretsManager::Secret'
+    Properties:
+      Name: !Sub ${DBInstanceName}-${PSsmEnvironment}-secret
+      Description: RDS secret
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "rdsadministrator"}'
+        GenerateStringKey: password
+        PasswordLength: 32
+        ExcludeCharacters: '"@/\'
+      KmsKeyId: !Ref KMSArnForSecretManager
+      Tags:
+        - Key: 'sc:name'
+          Value: !Sub ${DBInstanceName}-${PSsmEnvironment}-secret
+        - Key: 'sc:app-uuid'
+          Value: '{{resolve:ssm:/platform/account/app-uuid}}'
+        - Key: 'sc:env'
+          Value: '{{resolve:ssm:/platform/account/env}}'
+
+  DefaultDBSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Condition: IS-No-SG
+    Properties:
+      GroupDescription: Open RDS database access
+      VpcId: !Sub 
+        - '{{resolve:ssm:/platform/sharedvpc/${Environment}/vpc_id}}'
+        - Environment: !Ref PSsmEnvironment
+      Tags:
+        - Key: 'sc:name'
+          Value: !Join ['.', [ !Ref AWS::StackName, !Ref PSsmEnvironment, !Ref AWS::Region, "sg-rds", !Sub '{{resolve:ssm:/platform/sharedvpc/${PSsmEnvironment}/vpc_id}}']]
+        - Key: 'sc:app-uuid'
+          Value: '{{resolve:ssm:/platform/account/app-uuid}}'
+        - Key: 'sc:env'
+          Value: '{{resolve:ssm:/platform/account/env}}'
+
+  DefaultDBSecurityGroupEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Condition: IS-No-SG
+    Properties: 
+      Description: Default Egress rule for DbSecurity group
+      FromPort: 3306
+      GroupId: 
+        !GetAtt 
+          - DefaultDBSecurityGroup
+          - GroupId
+      IpProtocol: tcp
+      ToPort: 3306
+      CidrIp: 0.0.0.0/0
+
+  DBSubnetGroup:
+    Type: 'AWS::RDS::DBSubnetGroup'
+    Properties:
+      DBSubnetGroupDescription: RDS subnet group
+      SubnetIds: !Ref SubnetIds
+      Tags:
+        - Key: 'sc:name'
+          Value: !Sub ${DBInstanceName}-${PSsmEnvironment}-subnetgroup
+        - Key: 'sc:app-uuid'
+          Value: '{{resolve:ssm:/platform/account/app-uuid}}'
+        - Key: 'sc:env'
+          Value: '{{resolve:ssm:/platform/account/env}}'
+
+  MainDB:
+    Type: 'AWS::RDS::DBInstance'
+    Properties:
+      DBName: !Ref DBSchemaName
+      AllocatedStorage: !FindInMap 
+        - Plans
+        - !Ref DBSize
+        - MinStorage
+      MaxAllocatedStorage: !FindInMap 
+        - Plans
+        - !Ref DBSize
+        - MaxStorage
+      StorageType: !FindInMap 
+        - Plans
+        - !Ref DBSize
+        - StorageType
+      DBInstanceClass: !FindInMap 
+        - Plans
+        - !Ref DBSize
+        - Instance
+      DBInstanceIdentifier: !Sub ${DBInstanceName}-${PSsmEnvironment}-rds
+      Engine: mariadb
+      EngineVersion: !Ref DBVersion      
+      Port: 3306
+      MasterUsername: !Join 
+        - ''
+        - - '{{resolve:secretsmanager:'
+          - !Ref DBSecret
+          - ':SecretString:username}}'
+      MasterUserPassword: !Join 
+        - ''
+        - - '{{resolve:secretsmanager:'
+          - !Ref DBSecret
+          - ':SecretString:password}}'
+      MultiAZ: !Ref MultiAZ
+      DeletionProtection: !Ref DeletionProtection
+      AllowMajorVersionUpgrade: false
+      AutoMinorVersionUpgrade: true
+      BackupRetentionPeriod: 14
+      EnableCloudwatchLogsExports:
+        - audit
+        - error
+        - general
+        - slowquery
+      # EnableIAMDatabaseAuthentication: true
+      EnablePerformanceInsights: true
+      PreferredBackupWindow: !Ref PreferredBackupWindow
+      PreferredMaintenanceWindow: !Ref PreferredMaintenanceWindow
+      PubliclyAccessible: false
+      StorageEncrypted: true
+      KmsKeyId: !Ref KMSArnForDB
+      VPCSecurityGroups:
+        'Fn::If':
+          - IS-SG
+          - 
+            - !Ref DBSecurityGroup
+          - 
+            - !Ref DefaultDBSecurityGroup
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      Tags:
+        - Key: 'sc:name'
+          Value: !Sub ${DBInstanceName}-${PSsmEnvironment}-rds
+        - Key: 'sc:app-uuid'
+          Value: '{{resolve:ssm:/platform/account/app-uuid}}'
+        - Key: 'sc:env'
+          Value: '{{resolve:ssm:/platform/account/env}}'
+  DBSecretAttachment:
+    Type: 'AWS::SecretsManager::SecretTargetAttachment'
+    Properties:
+      SecretId: !Ref DBSecret
+      TargetId: !Ref MainDB
+      TargetType: 'AWS::RDS::DBInstance'
+Outputs:
+  ConnectionString:
+    Description: JDBC connection string for the initial database
+    Value: 
+      !Join 
+        - ''
+        - - 'jdbc:mariadb://'
+          - !GetAtt 
+            - MainDB
+            - Endpoint.Address
+          - ':'
+          - !GetAtt 
+            - MainDB
+            - Endpoint.Port
+          - /
+          - !Ref DBSchemaName
+  CredentialsSecret:
+    Description: Secret ARN that holds admin username and password for the RDS instance
+    Value: !Ref DBSecret
+  DBSecurityGroupID:
+    Description: Database security group Id, will come handy for traffic accesss
+    Value:
+      'Fn::If':
+        - IS-SG
+        - !Ref DBSecurityGroup
+        - !GetAtt DefaultDBSecurityGroup.GroupId
