@@ -88,7 +88,7 @@ Resources:
         SecretStringTemplate: '{"username":"master-user"}'
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
-    
+
   opSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Condition: IS-No-SG
@@ -123,6 +123,35 @@ Resources:
         - Key: 'sc:env'
           Value: '{{resolve:ssm:/platform/account/env}}'
 
+  DomainSlowSearchLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 30
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+
+  DomainSlowIndexLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 30
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+
+  DomainAppLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 30
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+
+  DomainAuditLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 30
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+
+
   OpenSearchServiceDomain:
     Type: 'AWS::OpenSearchService::Domain'
     Properties:
@@ -151,6 +180,40 @@ Resources:
               AWS: '*'
             Action: 'es:*'
             Resource: '*'
+      LogPublishingOptions:
+        ES_APPLICATION_LOGS:
+          CloudWatchLogsLogGroupArn:
+            Fn::GetAtt:
+              - DomainAppLogs
+              - Arn
+          Enabled: true
+        SEARCH_SLOW_LOGS:
+          CloudWatchLogsLogGroupArn:
+            Fn::GetAtt:
+              - DomainSlowSearchLogs
+              - Arn
+          Enabled: true
+        INDEX_SLOW_LOGS:
+          CloudWatchLogsLogGroupArn:
+            Fn::GetAtt:
+              - DomainSlowIndexLogs
+              - Arn
+          Enabled: true
+        AUDIT_LOGS:
+          CloudWatchLogsLogGroupArn:
+            Fn::GetAtt:
+              - DomainAuditLogs
+              - Arn
+          Enabled: true
+      CognitoOptions:
+        Enabled: false
+      NodeToNodeEncryptionOptions:
+        Enabled: true
+      DomainEndpointOptions:
+        EnforceHTTPS: true
+        TLSSecurityPolicy: Policy-Min-TLS-1-0-2019-07
+      EncryptionAtRestOptions:
+        Enabled: true
       AdvancedOptions:
         rest.action.multi.allow_explicit_index: true
         override_main_response_version: true
@@ -175,6 +238,8 @@ Resources:
           - Ref: opSecurityGroup
     UpdatePolicy:
       EnableVersionUpgrade: true
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
 
 
 Outputs:

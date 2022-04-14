@@ -48,6 +48,14 @@ Resources:
     DeletionPolicy: Retain
     Metadata:
       aws:cdk:path: CdkOpenSearchStack/Domain/AppLogs/Resource
+  DomainAuditLogs608E0FA6:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 30
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: CdkOpenSearchStack/Domain/AuditLogs/Resource
   DomainESLogGroupPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dceCustomResourcePolicy2D0D980E:
     Type: AWS::IAM::Policy
     Properties:
@@ -86,6 +94,10 @@ Resources:
             - Fn::GetAtt:
                 - DomainAppLogs21698C1B
                 - Arn
+            - \",\"
+            - Fn::GetAtt:
+                - DomainAuditLogs608E0FA6
+                - Arn
             - \"]}],\"Version\":\"2012-10-17\"}"},"physicalResourceId":{"id":"ESLogGroupPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dce"}}
       Update:
         Fn::Join:
@@ -101,6 +113,10 @@ Resources:
             - \",\"
             - Fn::GetAtt:
                 - DomainAppLogs21698C1B
+                - Arn
+            - \",\"
+            - Fn::GetAtt:
+                - DomainAuditLogs608E0FA6
                 - Arn
             - \"]}],\"Version\":\"2012-10-17\"}"},"physicalResourceId":{"id":"ESLogGroupPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dce"}}
       Delete: '{"service":"CloudWatchLogs","action":"deleteResourcePolicy","parameters":{"policyName":"ESLogPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dce"},"ignoreErrorCodesMatching":"400"}'
@@ -168,6 +184,12 @@ Resources:
               - DomainSlowIndexLogsFE2F1061
               - Arn
           Enabled: true
+        AUDIT_LOGS:
+          CloudWatchLogsLogGroupArn:
+            Fn::GetAtt:
+              - DomainAuditLogs608E0FA6
+              - Arn
+          Enabled: true
       NodeToNodeEncryptionOptions:
         Enabled: true
     DependsOn:
@@ -221,7 +243,7 @@ Resources:
   CDKMetadata:
     Type: AWS::CDK::Metadata
     Properties:
-      Analytics: v2:deflate64:H4sIAAAAAAAA/12QzU7DMBCEn6V3Z6H8CK40CC4cqvAA0dZZUjext/I6rVCUd2edEA6c9pud8WrkO9g+w+0Gr1LYpit6d4DxM6HtTPkV9hjRU6Jo1K9HPlMQwmiPQvHiLMH4yh5dyNmFJiNkIyXxGLClqMdmnRMLTabnVmD84PY98nDOzsrqoT80qK9caHtKHN6GYJPjYP5A8ytPxqGHcc+9s99z4YUq7inLPLXRfY0i2gle8lANu8F2lHYoattBEvs6kvAQLWnqKuW8q35X5r/UyyvPJ/XDWi2cjZJD45ZugRuCk9xctg+wfYLHzUmcK+IQkvME1TJ/ADzHPCqAAQAA
+      Analytics: v2:deflate64:H4sIAAAAAAAA/12QQU/DMAyFf8vuqdkGiDMrgguHqfyAyktNydrEU5xuQlX/O05LOXDy9/xerKfsYb+F7QZvUtimK3p3gvEjoe1M+RmOGNFTomjUr0e+UBDCaL+E4tVZgvGFPbqQswtNRshGSuIxYEtRj806JxaaTM+twPjO7Vvk4ZKdldVDf2pQX7nQ9pQ4vA7BJsfB/IHmV56MQw/jkXtnv+fCC1XcU5Z5aqP7GkW0EzznoRoOg+0oHVDUtoMk9nUk4SFa0tRNynlX/a7Mf6mXV55P6oe1WjgbJYfGLd0CNwRnubvuHmD3BI+bszhXxCEk5wmqZf4AkGwbFIABAAA=
     Metadata:
       aws:cdk:path: CdkOpenSearchStack/CDKMetadata/Default
     Condition: CDKMetadataAvailable

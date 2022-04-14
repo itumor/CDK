@@ -58,6 +58,7 @@ export class CdkOpenSearchStack extends Stack {
                 slowSearchLogEnabled: true,
                 appLogEnabled: true,
                 slowIndexLogEnabled: true,
+                auditLogEnabled: true,
             },
   
         });
