@@ -1,0 +1,199 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: OpenSearchServiceDomain resource
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+    -
+      Label:
+        default: 'OpenSearch Parameters'
+      Parameters:
+      - DomainName
+      - EngineVersion
+      - EBSEnabled
+      - EBSVolumeSize
+      - ClusterInstanceCount
+      - ClusterInstanceType
+      - DedicatedMasterCount
+      - DedicatedMasterType
+      - SubDomainNameWithDot
+      - SubnetIds
+      - opSecurityGroup
+
+Parameters:
+  DomainName:
+    Description: 'A name for the Amazon ES domain.'
+    Type: String
+  EBSEnabled:
+    Description: 'Specifies whether Amazon EBS volumes are attached to data nodes in the Amazon ES domain (some instance types come with instance store that you can use instead).'
+    Type: String
+    AllowedValues: [true, false]
+    Default: true
+  EBSVolumeSize:
+    Description: 'The size of the EBS volume for each data node. The minimum and maximum size of an EBS volume depends on the EBS volume type and the instance type to which it is attached.'
+    Type: Number
+    Default: 10
+  ElasticsearchVersion:
+    Description: 'Elasticsearch version'
+    Type: String
+    Default: 'OpenSearch_1.2'
+    AllowedValues: ["OpenSearch_1.2","OpenSearch_1.1","OpenSearch_1.0","Elasticsearch_7.10","Elasticsearch_7.9","Elasticsearch_7.8","Elasticsearch_7.7","Elasticsearch_7.4","Elasticsearch_7.1","Elasticsearch_6.8","Elasticsearch_6.7","Elasticsearch_6.5","Elasticsearch_6.4","Elasticsearch_6.3","Elasticsearch_6.2","Elasticsearch_6.0","Elasticsearch_5.6","Elasticsearch_5.5","Elasticsearch_5.3","Elasticsearch_5.1","Elasticsearch_2.3","Elasticsearch_1.5"] # aws opensearch list-versions --query "Versions[]" 
+  ClusterInstanceCount:
+    Description: 'The number of data nodes (instances) to use in the Amazon ES domain.'
+    Type: Number
+    Default: 1
+  ClusterInstanceType:
+    Description: 'The instance type for your data nodes.'
+    Type: 'String'
+    Default: 't2.small.elasticsearch'
+  DedicatedMasterCount:
+    Description: 'The number of dedicated master nodes (instances) to use in the Amazon ES domain (set to 0 to disable dedicated master nodes).'
+    Type: Number
+    Default: 0
+  DedicatedMasterType:
+    Description: 'The instance type for your dedicated master nodes.'
+    Type: 'String'
+    Default: 't2.small.elasticsearch'
+  SubDomainNameWithDot:
+    Description: 'Name that is used to create the DNS entry with trailing dot, e.g. §{SubDomainNameWithDot}§{HostedZoneName}. Leave blank for naked (or apex and bare) domain. Requires ParentZoneStack parameter!'
+    Type: String
+    Default: 'elasticsearch.'
+  SubnetIds:
+    Description: >-
+      List of subnets in which the instance is to be placed; at least two
+      required
+    Type: 'List<AWS::EC2::Subnet::Id>'
+  opSecurityGroup:
+    Description: >-
+      Specify the security group to be used by OpenSearch, if not provide a default will get created
+    Type: String
+    Default: ''
+
+Conditions:
+  IS-No-SG: !Equals 
+    - !Ref opSecurityGroup
+    - ""
+
+  IS-SG: !Not [!Equals [!Ref opSecurityGroup, ""]]
+  HasEBSEnabled: !Equals [!Ref EBSEnabled, 'true']
+  HasDedicatedMasterNodes: !Not [!Equals [!Ref DedicatedMasterCount, 0]]
+  HasSingleClusterInstance: !Equals [!Ref ClusterInstanceCount, '1']
+
+Resources:
+  DomainMasterUser:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      GenerateSecretString:
+        ExcludeCharacters: "{}'\\*[]()`"
+        GenerateStringKey: password
+        SecretStringTemplate: '{"username":"master-user"}'
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    
+  opSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Condition: IS-No-SG
+    Properties:
+      GroupDescription: Open access for OpenSearch
+      VpcId: !Sub 
+        - '{{resolve:ssm:/platform/sharedvpc/${Environment}/vpc_id}}'
+        - Environment: !Ref PSsmEnvironment
+      Tags:
+        - Key: 'sc:name'
+          Value: !Join ['.', [ !Ref AWS::StackName, !Ref PSsmEnvironment, !Ref AWS::Region, "sg-op", !Sub '{{resolve:ssm:/platform/sharedvpc/${PSsmEnvironment}/vpc_id}}']]
+        - Key: 'sc:app-uuid'
+          Value: '{{resolve:ssm:/platform/account/app-uuid}}'
+        - Key: 'sc:env'
+          Value: '{{resolve:ssm:/platform/account/env}}'
+      SecurityGroupIngress:
+        - FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+
+  opSubnetGroup:
+    Type: 'AWS::RDS::DBSubnetGroup'
+    Properties:
+      DBSubnetGroupDescription: RDS subnet group
+      SubnetIds: !Ref SubnetIds
+      Tags:
+        - Key: 'sc:name'
+          Value: !Sub ${DBInstanceName}-${PSsmEnvironment}-subnetgroup
+        - Key: 'sc:app-uuid'
+          Value: '{{resolve:ssm:/platform/account/app-uuid}}'
+        - Key: 'sc:env'
+          Value: '{{resolve:ssm:/platform/account/env}}'
+
+  OpenSearchServiceDomain:
+    Type: 'AWS::OpenSearchService::Domain'
+    Properties:
+      DomainName:
+        Ref: DomainName
+      EngineVersion:
+        Ref: EngineVersion
+      ClusterConfig:
+        DedicatedMasterCount: !If [HasDedicatedMasterNodes, !Ref DedicatedMasterCount, !Ref 'AWS::NoValue']
+        DedicatedMasterEnabled: !If [HasDedicatedMasterNodes, true, false]
+        DedicatedMasterType: !If [HasDedicatedMasterNodes, !Ref DedicatedMasterType, !Ref 'AWS::NoValue']
+        InstanceCount: !Ref ClusterInstanceCount
+        InstanceType: !Ref ClusterInstanceType
+        ZoneAwarenessEnabled: !If [HasSingleClusterInstance, false, true]
+      EBSOptions: !If
+      - HasEBSEnabled
+      - EBSEnabled: true
+        VolumeSize: !Ref EBSVolumeSize
+        VolumeType: gp2
+      - EBSEnabled: false
+      AccessPolicies:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Deny
+            Principal:
+              AWS: '*'
+            Action: 'es:*'
+            Resource: '*'
+      AdvancedOptions:
+        rest.action.multi.allow_explicit_index: true
+        override_main_response_version: true
+      AdvancedSecurityOptions:
+        Enabled: true
+        InternalUserDatabaseEnabled: true
+        MasterUserOptions:
+          MasterUserName: master-user
+          MasterUserPassword:
+            Fn::Join:
+              - ""
+              - - "{{resolve:secretsmanager:"
+                - Ref: DomainMasterUser
+                - :SecretString:password::}}
+      Tags:
+        - Key: foo
+          Value: bar
+      VPCOptions:
+        SubnetIds:
+          - Ref: opSubnetGroup
+        SecurityGroupIds:
+          - Ref: opSecurityGroup
+    UpdatePolicy:
+      EnableVersionUpgrade: true
+
+
+Outputs:
+  Arn:
+    Value:
+      'Fn::GetAtt':
+        - OpenSearchServiceDomain
+        - Arn
+  DomainEndpoint:
+    Value:
+      'Fn::GetAtt':
+        - OpenSearchServiceDomain
+        - DomainEndpoint
+  SecurityGroupId:
+    Value:
+      Ref: opSecurityGroup
+  SubnetId:
+    Value:
+      Ref: opSubnetGroup
+  MasterUser:
+    Value:
+      Ref: DomainMasterUser
