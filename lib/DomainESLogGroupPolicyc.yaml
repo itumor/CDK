@@ -1,0 +1,71 @@
+DomainESLogGroupPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dceCustomResourcePolicy2D0D980E:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - logs:DeleteResourcePolicy
+              - logs:PutResourcePolicy
+            Effect: Allow
+            Resource: "*"
+        Version: "2012-10-17"
+      PolicyName: DomainESLogGroupPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dceCustomResourcePolicy2D0D980E
+      Roles:
+        - Ref: AWS679f53fac002430cb0da5b7982bd2287ServiceRoleC1EA0FF2
+    Metadata:
+      aws:cdk:path: CdkOpenSearchStack/Domain/ESLogGroupPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dce/CustomResourcePolicy/Resource
+  DomainESLogGroupPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dce7F253045:
+    Type: Custom::CloudwatchLogResourcePolicy
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - AWS679f53fac002430cb0da5b7982bd22872D164C4C
+          - Arn
+      Create:
+        Fn::Join:
+          - ""
+          - - '{"service":"CloudWatchLogs","action":"putResourcePolicy","parameters":{"policyName":"ESLogPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dce","policyDocument":"{\"Statement\":[{\"Action\":[\"logs:PutLogEvents\",\"logs:CreateLogStream\"],\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"es.amazonaws.com\"},\"Resource\":[\"'
+            - Fn::GetAtt:
+                - DomainSlowSearchLogs5B35A97A
+                - Arn
+            - \",\"
+            - Fn::GetAtt:
+                - DomainSlowIndexLogsFE2F1061
+                - Arn
+            - \",\"
+            - Fn::GetAtt:
+                - DomainAppLogs21698C1B
+                - Arn
+            - \",\"
+            - Fn::GetAtt:
+                - DomainAuditLogs608E0FA6
+                - Arn
+            - \"]}],\"Version\":\"2012-10-17\"}"},"physicalResourceId":{"id":"ESLogGroupPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dce"}}
+      Update:
+        Fn::Join:
+          - ""
+          - - '{"service":"CloudWatchLogs","action":"putResourcePolicy","parameters":{"policyName":"ESLogPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dce","policyDocument":"{\"Statement\":[{\"Action\":[\"logs:PutLogEvents\",\"logs:CreateLogStream\"],\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"es.amazonaws.com\"},\"Resource\":[\"'
+            - Fn::GetAtt:
+                - DomainSlowSearchLogs5B35A97A
+                - Arn
+            - \",\"
+            - Fn::GetAtt:
+                - DomainSlowIndexLogsFE2F1061
+                - Arn
+            - \",\"
+            - Fn::GetAtt:
+                - DomainAppLogs21698C1B
+                - Arn
+            - \",\"
+            - Fn::GetAtt:
+                - DomainAuditLogs608E0FA6
+                - Arn
+            - \"]}],\"Version\":\"2012-10-17\"}"},"physicalResourceId":{"id":"ESLogGroupPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dce"}}
+      Delete: '{"service":"CloudWatchLogs","action":"deleteResourcePolicy","parameters":{"policyName":"ESLogPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dce"},"ignoreErrorCodesMatching":"400"}'
+      InstallLatestAwsSdk: true
+    DependsOn:
+      - DomainESLogGroupPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dceCustomResourcePolicy2D0D980E
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: CdkOpenSearchStack/Domain/ESLogGroupPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dce/Resource/Default
