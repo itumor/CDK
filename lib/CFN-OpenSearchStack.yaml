@@ -18,6 +18,7 @@ Metadata:
       - SubDomainNameWithDot
       - SubnetIds
       - opSecurityGroup
+      - PSsmEnvironment
 
 Parameters:
   DomainName:
@@ -32,7 +33,7 @@ Parameters:
     Description: 'The size of the EBS volume for each data node. The minimum and maximum size of an EBS volume depends on the EBS volume type and the instance type to which it is attached.'
     Type: Number
     Default: 10
-  ElasticsearchVersion:
+  EngineVersion:
     Description: 'Elasticsearch version'
     Type: String
     Default: 'OpenSearch_1.2'
@@ -69,6 +70,12 @@ Parameters:
       Specify the security group to be used by OpenSearch, if not provide a default will get created
     Type: String
     Default: ''
+  PSsmEnvironment:
+    Description: Environment from the SSM parameter
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Default: /platform/account/env
+    AllowedValues:
+      - /platform/account/env
 
 Conditions:
   IS-No-SG: !Equals 
@@ -113,13 +120,13 @@ Resources:
           CidrIp: 0.0.0.0/0
 
   opSubnetGroup:
-    Type: 'AWS::RDS::DBSubnetGroup'
+    Type: 'AWS::EC2::Subnet'
     Properties:
       DBSubnetGroupDescription: RDS subnet group
       SubnetIds: !Ref SubnetIds
       Tags:
         - Key: 'sc:name'
-          Value: !Sub ${DBInstanceName}-${PSsmEnvironment}-subnetgroup
+          Value: !Sub ${DomainName}-${PSsmEnvironment}-subnetgroup
         - Key: 'sc:app-uuid'
           Value: '{{resolve:ssm:/platform/account/app-uuid}}'
         - Key: 'sc:env'
