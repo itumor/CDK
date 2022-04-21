@@ -158,3 +158,7 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 https://docs.aws.amazon.com/cli/latest/reference/opensearch/create-domain.html
 
 https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-opensearchservice-domain.html
+
+
+
+# aws cloudformation create-stack --stack-name opensearch --template-body file://CFN-OpenSearchStack.yaml --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
