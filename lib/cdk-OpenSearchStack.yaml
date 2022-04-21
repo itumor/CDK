@@ -1,299 +1,335 @@
+Parameters:
+  masterNodes:
+    Type: Number
+    Description: The number of instances to use for the master node.
+  dataNodes:
+    Type: Number
+    Description: The number of data nodes (instances) to use in the Amazon OpenSearch Service domain.
+  volumeSize:
+    Type: Number
+    Description: The size (in GiB) of the EBS volume for each data node.
+  BootstrapVersion:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /cdk-bootstrap/hnb659fds/version
+    Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
 Resources:
-  Vpc:
-    Type: AWS::EC2::VPC
+  DomainMasterUserBFAFA7D9:
+    Type: AWS::SecretsManager::Secret
     Properties:
-      CidrBlock: 10.0.0.0/16
-      EnableDnsHostnames: true
-      EnableDnsSupport: true
-      InstanceTenancy: default
-      Tags:
-        - Key: Name
-          Value: OpenSearchStack/Vpc
-
-  VpcPublicSubnet1Subnet:
-    Type: AWS::EC2::Subnet
+      GenerateSecretString:
+        ExcludeCharacters: "{}'\\*[]()`"
+        GenerateStringKey: password
+        SecretStringTemplate: '{"username":"master-user"}'
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: CdkOpenSearchStack/Domain/MasterUser/Resource
+  DomainSlowSearchLogs5B35A97A:
+    Type: AWS::Logs::LogGroup
     Properties:
-      VpcId:
-        Ref: Vpc
-      AvailabilityZone:
-        Fn::Select:
-          - 0
-          - Fn::GetAZs: ""
-      CidrBlock: 10.0.0.0/18
-      MapPublicIpOnLaunch: true
-      Tags:
-        - Key: aws-cfn:subnet-name
-          Value: Public
-        - Key: aws-cfn:subnet-type
-          Value: Public
-        - Key: Name
-          Value: OpenSearchStack/Vpc/PublicSubnet1
-  
-  VpcPublicSubnet1RouteTable:
-    Type: AWS::EC2::RouteTable
+      RetentionInDays: 30
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: CdkOpenSearchStack/Domain/SlowSearchLogs/Resource
+  DomainSlowIndexLogsFE2F1061:
+    Type: AWS::Logs::LogGroup
     Properties:
-      VpcId:
-        Ref: Vpc
-      Tags:
-        - Key: Name
-          Value: OpenSearchStack/Vpc/PublicSubnet1
-
-  VpcPublicSubnet1RouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
+      RetentionInDays: 30
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: CdkOpenSearchStack/Domain/SlowIndexLogs/Resource
+  DomainAppLogs21698C1B:
+    Type: AWS::Logs::LogGroup
     Properties:
-      RouteTableId:
-        Ref: VpcPublicSubnet1RouteTable
-      SubnetId:
-        Ref: VpcPublicSubnet1Subnet
-
-  VpcPublicSubnet1DefaultRoute:
-    Type: AWS::EC2::Route
+      RetentionInDays: 30
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: CdkOpenSearchStack/Domain/AppLogs/Resource
+  DomainAuditLogs608E0FA6:
+    Type: AWS::Logs::LogGroup
     Properties:
-      RouteTableId:
-        Ref: VpcPublicSubnet1RouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId:
-        Ref: VpcIG
-    DependsOn:
-      - VpcVPCGW
-
-  VpcPublicSubnet1:
-    Type: AWS::EC2::EIP
+      RetentionInDays: 30
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: CdkOpenSearchStack/Domain/AuditLogs/Resource
+  DomainESLogGroupPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dceCustomResourcePolicy2D0D980E:
+    Type: AWS::IAM::Policy
     Properties:
-      Domain: vpc
-      Tags:
-        - Key: Name
-          Value: OpenSearchStack/Vpc/PublicSubnet1
-
-  VpcPublicSubnet1NATGateway:
-    Type: AWS::EC2::NatGateway
+      PolicyDocument:
+        Statement:
+          - Action:
+              - logs:DeleteResourcePolicy
+              - logs:PutResourcePolicy
+            Effect: Allow
+            Resource: "*"
+        Version: "2012-10-17"
+      PolicyName: DomainESLogGroupPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dceCustomResourcePolicy2D0D980E
+      Roles:
+        - Ref: AWS679f53fac002430cb0da5b7982bd2287ServiceRoleC1EA0FF2
+    Metadata:
+      aws:cdk:path: CdkOpenSearchStack/Domain/ESLogGroupPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dce/CustomResourcePolicy/Resource
+  DomainESLogGroupPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dce7F253045:
+    Type: Custom::CloudwatchLogResourcePolicy
     Properties:
-      SubnetId:
-        Ref: VpcPublicSubnet1Subnet
-      AllocationId:
+      ServiceToken:
         Fn::GetAtt:
-          - VpcPublicSubnet1
-          - AllocationId
-      Tags:
-        - Key: Name
-          Value: OpenSearchStack/Vpc/PublicSubnet1
-
-  VpcPublicSubnet2Subnet:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId:
-        Ref: Vpc
-      AvailabilityZone:
-        Fn::Select:
-          - 1
-          - Fn::GetAZs: ""
-      CidrBlock: 10.0.64.0/18
-      MapPublicIpOnLaunch: true
-      Tags:
-        - Key: aws-cfn:subnet-name
-          Value: Public
-        - Key: aws-cfn:subnet-type
-          Value: Public
-        - Key: Name
-          Value: OpenSearchStack/Vpc/PublicSubnet2
-
-  VpcPublicSubnet2RouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId:
-        Ref: Vpc
-      Tags:
-        - Key: Name
-          Value: OpenSearchStack/Vpc/PublicSubnet2
-
-  VpcPublicSubnet2RouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId:
-        Ref: VpcPublicSubnet2RouteTable
-      SubnetId:
-        Ref: VpcPublicSubnet2Subnet
-
-  VpcPublicSubnet2DefaultRoute:
-    Type: AWS::EC2::Route
-    Properties:
-      RouteTableId:
-        Ref: VpcPublicSubnet2RouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId:
-        Ref: VpcIG
+          - AWS679f53fac002430cb0da5b7982bd22872D164C4C
+          - Arn
+      Create:
+        Fn::Join:
+          - ""
+          - - '{"service":"CloudWatchLogs","action":"putResourcePolicy","parameters":{"policyName":"ESLogPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dce","policyDocument":"{\"Statement\":[{\"Action\":[\"logs:PutLogEvents\",\"logs:CreateLogStream\"],\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"es.amazonaws.com\"},\"Resource\":[\"'
+            - Fn::GetAtt:
+                - DomainSlowSearchLogs5B35A97A
+                - Arn
+            - \",\"
+            - Fn::GetAtt:
+                - DomainSlowIndexLogsFE2F1061
+                - Arn
+            - \",\"
+            - Fn::GetAtt:
+                - DomainAppLogs21698C1B
+                - Arn
+            - \",\"
+            - Fn::GetAtt:
+                - DomainAuditLogs608E0FA6
+                - Arn
+            - \"]}],\"Version\":\"2012-10-17\"}"},"physicalResourceId":{"id":"ESLogGroupPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dce"}}
+      Update:
+        Fn::Join:
+          - ""
+          - - '{"service":"CloudWatchLogs","action":"putResourcePolicy","parameters":{"policyName":"ESLogPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dce","policyDocument":"{\"Statement\":[{\"Action\":[\"logs:PutLogEvents\",\"logs:CreateLogStream\"],\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"es.amazonaws.com\"},\"Resource\":[\"'
+            - Fn::GetAtt:
+                - DomainSlowSearchLogs5B35A97A
+                - Arn
+            - \",\"
+            - Fn::GetAtt:
+                - DomainSlowIndexLogsFE2F1061
+                - Arn
+            - \",\"
+            - Fn::GetAtt:
+                - DomainAppLogs21698C1B
+                - Arn
+            - \",\"
+            - Fn::GetAtt:
+                - DomainAuditLogs608E0FA6
+                - Arn
+            - \"]}],\"Version\":\"2012-10-17\"}"},"physicalResourceId":{"id":"ESLogGroupPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dce"}}
+      Delete: '{"service":"CloudWatchLogs","action":"deleteResourcePolicy","parameters":{"policyName":"ESLogPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dce"},"ignoreErrorCodesMatching":"400"}'
+      InstallLatestAwsSdk: true
     DependsOn:
-      - VpcVPCGW
-
-  VpcPublicSubnet2:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-      Tags:
-        - Key: Name
-          Value: OpenSearchStack/Vpc/PublicSubnet2
-
-  VpcPublicSubnet2NATGateway:
-    Type: AWS::EC2::NatGateway
-    Properties:
-      SubnetId:
-        Ref: VpcPublicSubnet2Subnet
-      AllocationId:
-        Fn::GetAtt:
-          - VpcPublicSubnet2
-          - AllocationId
-      Tags:
-        - Key: Name
-          Value: OpenSearchStack/Vpc/PublicSubnet2
-
-  VpcPrivateSubnet1Subnet:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId:
-        Ref: Vpc
-      AvailabilityZone:
-        Fn::Select:
-          - 0
-          - Fn::GetAZs: ""
-      CidrBlock: 10.0.128.0/18
-      MapPublicIpOnLaunch: false
-      Tags:
-        - Key: aws-cfn:subnet-name
-          Value: Private
-        - Key: aws-cfn:subnet-type
-          Value: Private
-        - Key: Name
-          Value: OpenSearchStack/Vpc/PrivateSubnet1
-
-  VpcPrivateSubnet1RouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId:
-        Ref: Vpc
-      Tags:
-        - Key: Name
-          Value: OpenSearchStack/Vpc/PrivateSubnet1
-
-  VpcPrivateSubnet1RouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId:
-        Ref: VpcPrivateSubnet1RouteTable
-      SubnetId:
-        Ref: VpcPrivateSubnet1Subnet
-
-  VpcPrivateSubnet1DefaultRoute:
-    Type: AWS::EC2::Route
-    Properties:
-      RouteTableId:
-        Ref: VpcPrivateSubnet1RouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId:
-        Ref: VpcPublicSubnet1NATGateway
-
-  VpcPrivateSubnet2Subnet:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId:
-        Ref: Vpc
-      AvailabilityZone:
-        Fn::Select:
-          - 1
-          - Fn::GetAZs: ""
-      CidrBlock: 10.0.192.0/18
-      MapPublicIpOnLaunch: false
-      Tags:
-        - Key: aws-cfn:subnet-name
-          Value: Private
-        - Key: aws-cfn:subnet-type
-          Value: Private
-        - Key: Name
-          Value: OpenSearchStack/Vpc/PrivateSubnet2
-
-  VpcPrivateSubnet2RouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId:
-        Ref: Vpc
-      Tags:
-        - Key: Name
-          Value: OpenSearchStack/Vpc/PrivateSubnet2
-
-  VpcPrivateSubnet2RouteTableAssociationA89CAD56:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId:
-        Ref: VpcPrivateSubnet2RouteTable
-      SubnetId:
-        Ref: VpcPrivateSubnet2Subnet
-
-  VpcPrivateSubnet2DefaultRoute:
-    Type: AWS::EC2::Route
-    Properties:
-      RouteTableId:
-        Ref: VpcPrivateSubnet2RouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId:
-        Ref: VpcPublicSubnet2NATGateway
-
-  VpcIG:
-    Type: AWS::EC2::InternetGateway
-    Properties:
-      Tags:
-        - Key: Name
-          Value: OpenSearchStack/Vpc
-
-  VpcVPCGW:
-    Type: AWS::EC2::VPCGatewayAttachment
-    Properties:
-      VpcId:
-        Ref: Vpc
-      InternetGatewayId:
-        Ref: VpcIG
-
-  DomainSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Security group for domain Domain
-      SecurityGroupEgress:
-        - CidrIp: 0.0.0.0/0
-          Description: Allow all outbound traffic by default
-          IpProtocol: "-1"
-      VpcId:
-        Ref: Vpc
-
-  Domain:
+      - DomainESLogGroupPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dceCustomResourcePolicy2D0D980E
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: CdkOpenSearchStack/Domain/ESLogGroupPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dce/Resource/Default
+  Domain66AC69E0:
     Type: AWS::OpenSearchService::Domain
     Properties:
+      AdvancedSecurityOptions:
+        Enabled: true
+        InternalUserDatabaseEnabled: true
+        MasterUserOptions:
+          MasterUserName: master-user
+          MasterUserPassword:
+            Fn::Join:
+              - ""
+              - - "{{resolve:secretsmanager:"
+                - Ref: DomainMasterUserBFAFA7D9
+                - :SecretString:password::}}
       ClusterConfig:
-        DedicatedMasterEnabled: false
-        InstanceCount: 3
+        DedicatedMasterCount:
+          Ref: masterNodes
+        DedicatedMasterEnabled: true
+        DedicatedMasterType: r5.large.search
+        InstanceCount:
+          Ref: dataNodes
         InstanceType: r5.large.search
         ZoneAwarenessConfig:
-          AvailabilityZoneCount: 2
+          AvailabilityZoneCount: 3
         ZoneAwarenessEnabled: true
       CognitoOptions:
         Enabled: false
       DomainEndpointOptions:
-        EnforceHTTPS: false
+        EnforceHTTPS: true
         TLSSecurityPolicy: Policy-Min-TLS-1-0-2019-07
       EBSOptions:
         EBSEnabled: true
-        VolumeSize: 10
+        VolumeSize:
+          Ref: volumeSize
         VolumeType: gp2
       EncryptionAtRestOptions:
-        Enabled: false
+        Enabled: true
       EngineVersion: OpenSearch_1.0
-      LogPublishingOptions: {}
+      LogPublishingOptions:
+        ES_APPLICATION_LOGS:
+          CloudWatchLogsLogGroupArn:
+            Fn::GetAtt:
+              - DomainAppLogs21698C1B
+              - Arn
+          Enabled: true
+        SEARCH_SLOW_LOGS:
+          CloudWatchLogsLogGroupArn:
+            Fn::GetAtt:
+              - DomainSlowSearchLogs5B35A97A
+              - Arn
+          Enabled: true
+        INDEX_SLOW_LOGS:
+          CloudWatchLogsLogGroupArn:
+            Fn::GetAtt:
+              - DomainSlowIndexLogsFE2F1061
+              - Arn
+          Enabled: true
+        AUDIT_LOGS:
+          CloudWatchLogsLogGroupArn:
+            Fn::GetAtt:
+              - DomainAuditLogs608E0FA6
+              - Arn
+          Enabled: true
       NodeToNodeEncryptionOptions:
-        Enabled: false
-      VPCOptions:
-        SecurityGroupIds:
-          - Fn::GetAtt:
-              - DomainSecurityGroup
-              - GroupId
-        SubnetIds:
-          - Ref: VpcPrivateSubnet1Subnet
-          - Ref: VpcPrivateSubnet2Subnet
+        Enabled: true
+    DependsOn:
+      - DomainESLogGroupPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dceCustomResourcePolicy2D0D980E
+      - DomainESLogGroupPolicyc850edcf998cf48e32532500f0564bf8fd6e0d6dce7F253045
+    UpdatePolicy:
+      EnableVersionUpgrade: true
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: CdkOpenSearchStack/Domain/Resource
+  AWS679f53fac002430cb0da5b7982bd2287ServiceRoleC1EA0FF2:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: CdkOpenSearchStack/AWS679f53fac002430cb0da5b7982bd2287/ServiceRole/Resource
+  AWS679f53fac002430cb0da5b7982bd22872D164C4C:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
+        S3Key: 39381d2c8b8ec42679de4960c24f0c83c56772cdc2b10b6fc14cd0a99aba42ed.zip
+      Role:
+        Fn::GetAtt:
+          - AWS679f53fac002430cb0da5b7982bd2287ServiceRoleC1EA0FF2
+          - Arn
+      Handler: index.handler
+      Runtime: nodejs12.x
+      Timeout: 120
+    DependsOn:
+      - AWS679f53fac002430cb0da5b7982bd2287ServiceRoleC1EA0FF2
+    Metadata:
+      aws:cdk:path: CdkOpenSearchStack/AWS679f53fac002430cb0da5b7982bd2287/Resource
+      aws:asset:path: asset.39381d2c8b8ec42679de4960c24f0c83c56772cdc2b10b6fc14cd0a99aba42ed
+      aws:asset:is-bundled: false
+      aws:asset:property: Code
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAA/12QQU/DMAyFf8vuqdkGiDMrgguHqfyAyktNydrEU5xuQlX/O05LOXDy9/xerKfsYb+F7QZvUtimK3p3gvEjoe1M+RmOGNFTomjUr0e+UBDCaL+E4tVZgvGFPbqQswtNRshGSuIxYEtRj806JxaaTM+twPjO7Vvk4ZKdldVDf2pQX7nQ9pQ4vA7BJsfB/IHmV56MQw/jkXtnv+fCC1XcU5Z5aqP7GkW0EzznoRoOg+0oHVDUtoMk9nUk4SFa0tRNynlX/a7Mf6mXV55P6oe1WjgbJYfGLd0CNwRnubvuHmD3BI+bszhXxCEk5wmqZf4AkGwbFIABAAA=
+    Metadata:
+      aws:cdk:path: CdkOpenSearchStack/CDKMetadata/Default
+    Condition: CDKMetadataAvailable
+Conditions:
+  CDKMetadataAvailable:
+    Fn::Or:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - af-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ca-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-northwest-1
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-3
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - me-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - sa-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-2
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-2
+Rules:
+  CheckBootstrapVersion:
+    Assertions:
+      - Assert:
+          Fn::Not:
+            - Fn::Contains:
+                - - "1"
+                  - "2"
+                  - "3"
+                  - "4"
+                  - "5"
+                - Ref: BootstrapVersion
+        AssertDescription: CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.
+

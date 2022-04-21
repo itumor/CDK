@@ -16,14 +16,17 @@ Metadata:
       - DedicatedMasterCount
       - DedicatedMasterType
       - SubDomainNameWithDot
-      - SubnetIds
+#      - SubnetIds
+      - SubnetId
       - opSecurityGroup
       - PSsmEnvironment
+
 
 Parameters:
   DomainName:
     Description: 'A name for the Amazon ES domain.'
     Type: String
+    Default: 'domainname'
   EBSEnabled:
     Description: 'Specifies whether Amazon EBS volumes are attached to data nodes in the Amazon ES domain (some instance types come with instance store that you can use instead).'
     Type: String
@@ -45,7 +48,7 @@ Parameters:
   ClusterInstanceType:
     Description: 'The instance type for your data nodes.'
     Type: 'String'
-    Default: 't2.small.search'
+    Default: 't3.small.search'
     AllowedValues: ["t2.micro.search","t2.small.search","t2.medium.search","t3.small.search","t3.medium.search"]
   DedicatedMasterCount:
     Description: 'The number of dedicated master nodes (instances) to use in the Amazon ES domain (set to 0 to disable dedicated master nodes).'
@@ -54,17 +57,23 @@ Parameters:
   DedicatedMasterType:
     Description: 'The instance type for your dedicated master nodes.'
     Type: 'String'
-    Default: 't2.small.search'
+    Default: 't3.small.search'
     AllowedValues: ["t2.micro.search","t2.small.search","t2.medium.search","t3.small.search","t3.medium.search"]
   SubDomainNameWithDot:
     Description: 'Name that is used to create the DNS entry with trailing dot, e.g. §{SubDomainNameWithDot}§{HostedZoneName}. Leave blank for naked (or apex and bare) domain. Requires ParentZoneStack parameter!'
     Type: String
     Default: 'elasticsearch.'
-  SubnetIds:
+#  SubnetIds:
+#    Description: >-
+#      List of subnets in which the instance is to be placed; at least two
+#      required
+#    Type: 'List<AWS::EC2::Subnet::Id>'
+  SubnetId:
     Description: >-
-      List of subnets in which the instance is to be placed; at least two
+      subnets in which the instance is to be placed
       required
-    Type: 'List<AWS::EC2::Subnet::Id>'
+    Type: 'AWS::EC2::Subnet::Id'
+    Default: 'subnet-082e89732b12fc727'
   opSecurityGroup:
     Description: >-
       Specify the security group to be used by OpenSearch, if not provide a default will get created
@@ -119,51 +128,51 @@ Resources:
           ToPort: 443
           CidrIp: 0.0.0.0/0
 
-  opSubnetGroup:
-    Type: 'AWS::EC2::Subnet'
-    Properties:
-      VpcId: !Sub 
-        - '{{resolve:ssm:/platform/sharedvpc/${Environment}/vpc_id}}'
-        - Environment: !Ref PSsmEnvironment
-      DBSubnetGroupDescription: EC2 subnet group
-      SubnetIds: !Ref SubnetIds
-      
-      Tags:
-        - Key: 'sc:name'
-          Value: !Sub ${DomainName}-${PSsmEnvironment}-subnetgroup
-        - Key: 'sc:app-uuid'
-          Value: '{{resolve:ssm:/platform/account/app-uuid}}'
-        - Key: 'sc:env'
-          Value: '{{resolve:ssm:/platform/account/env}}'
+
 
   DomainSlowSearchLogs:
     Type: AWS::Logs::LogGroup
     Properties:
       RetentionInDays: 30
-    UpdateReplacePolicy: Retain
-    DeletionPolicy: Retain
+      LogGroupName: !Sub '/aws/opensearch/${DomainName}/DomainSlowLogs'
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+
+  OpenSearchLogPolicy:
+    Type: AWS::Logs::ResourcePolicy
+    Properties:
+      PolicyName: opensearch-log-policy
+      PolicyDocument: !Sub "{ \"Version\": \"2012-10-17\", \"Statement\": [{ \"Sid\": \"\", \"Effect\": \"Allow\", \"Principal\": { \"Service\": \"es.amazonaws.com\"}, \"Action\":[ \"logs:PutLogEvents\",\"logs:PutLogEventsBatch\",\"logs:CreateLogStream\"],\"Resource\": \"arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/opensearch/${DomainName}/*\"}]}"
 
   DomainSlowIndexLogs:
     Type: AWS::Logs::LogGroup
     Properties:
       RetentionInDays: 30
-    UpdateReplacePolicy: Retain
-    DeletionPolicy: Retain
+      LogGroupName: !Sub '/aws/opensearch/${DomainName}/DomainSlowIndexLogs'
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
 
   DomainAppLogs:
     Type: AWS::Logs::LogGroup
     Properties:
       RetentionInDays: 30
-    UpdateReplacePolicy: Retain
-    DeletionPolicy: Retain
+      LogGroupName: !Sub '/aws/opensearch/${DomainName}/DomainAppLogs'
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
 
   DomainAuditLogs:
     Type: AWS::Logs::LogGroup
     Properties:
       RetentionInDays: 30
-    UpdateReplacePolicy: Retain
-    DeletionPolicy: Retain
+      LogGroupName: !Sub '/aws/opensearch/${DomainName}/DomainAuditLogs'
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
 
+  ServiceLinkedRole:
+    Type: 'AWS::IAM::ServiceLinkedRole'
+    Properties:
+      AWSServiceName: es.amazonaws.com
+      Description: 'Role for ES to access resources in my VPC'
 
   OpenSearchServiceDomain:
     Type: 'AWS::OpenSearchService::Domain'
@@ -246,14 +255,21 @@ Resources:
           Value: bar
       VPCOptions:
         SubnetIds:
-          - Ref: opSubnetGroup
+          - Ref: SubnetId
         SecurityGroupIds:
-          - Ref: opSecurityGroup
+          - Ref: DefaultopSecurityGroup
     UpdatePolicy:
       EnableVersionUpgrade: true
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
-
+    DependsOn:
+    - DomainMasterUser
+    - DefaultopSecurityGroup
+    - DomainSlowSearchLogs
+    - DomainSlowIndexLogs
+    - DomainAppLogs
+    - DomainAuditLogs
+    - ServiceLinkedRole
 
 Outputs:
   Arn:
@@ -268,10 +284,11 @@ Outputs:
         - DomainEndpoint
   SecurityGroupId:
     Value:
-      Ref: opSecurityGroup
+      Ref: DefaultopSecurityGroup
   SubnetId:
     Value:
-      Ref: opSubnetGroup
+      Ref: SubnetId
   MasterUser:
     Value:
       Ref: DomainMasterUser
+

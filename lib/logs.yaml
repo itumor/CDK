@@ -1,0 +1,38 @@
+
+  DomainSlowSearchLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 30
+      LogGroupName: !Sub '/aws/opensearch/${DomainName}/DomainSlowLogs'
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+
+  OpenSearchLogPolicy:
+    Type: AWS::Logs::ResourcePolicy
+    Properties:
+      PolicyName: opensearch-log-policy
+      PolicyDocument: !Sub "{ \"Version\": \"2012-10-17\", \"Statement\": [{ \"Sid\": \"\", \"Effect\": \"Allow\", \"Principal\": { \"Service\": \"es.amazonaws.com\"}, \"Action\":[ \"logs:PutLogEvents\",\"logs:PutLogEventsBatch\",\"logs:CreateLogStream\"],\"Resource\": \"arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/opensearch/${DomainName}/*\"}]}"
+
+  DomainSlowIndexLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 30
+      LogGroupName: !Sub '/aws/opensearch/${DomainName}/DomainSlowIndexLogs'
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+
+  DomainAppLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 30
+      LogGroupName: !Sub '/aws/opensearch/${DomainName}/DomainAppLogs'
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+
+  DomainAuditLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 30
+      LogGroupName: !Sub '/aws/opensearch/${DomainName}/DomainAuditLogs'
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete

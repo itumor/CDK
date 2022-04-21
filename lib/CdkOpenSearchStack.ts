@@ -7,7 +7,7 @@ import { Construct } from 'constructs';
 export class CdkOpenSearchStack extends Stack {
     constructor(scope: Construct, id: string, props?: StackProps) {
         super(scope, id, props);
-
+/*
         const vpc = new ec2.Vpc(this, 'Vpc');
 const domainProps: opensearch.DomainProps = {
   version: opensearch.EngineVersion.OPENSEARCH_1_0,
@@ -23,8 +23,8 @@ const domainProps: opensearch.DomainProps = {
   },
 };
 new opensearch.Domain(this, 'Domain', domainProps);
+*/
 
-/*
         const masterNodes = new CfnParameter(this, "masterNodes", {
             type: "Number",
             description: "The number of instances to use for the master node."
@@ -85,7 +85,7 @@ new opensearch.Domain(this, 'Domain', domainProps);
         const masterSysMemoryUtilization = prodDomain.metric('MasterSysMemoryUtilization');
 
 
-        */
+        
     }
     
 
