@@ -8,7 +8,23 @@ export class CdkOpenSearchStack extends Stack {
     constructor(scope: Construct, id: string, props?: StackProps) {
         super(scope, id, props);
 
+        const vpc = new ec2.Vpc(this, 'Vpc');
+const domainProps: opensearch.DomainProps = {
+  version: opensearch.EngineVersion.OPENSEARCH_1_0,
+  removalPolicy: RemovalPolicy.DESTROY,
+  vpc,
+  // must be enabled since our VPC contains multiple private subnets.
+  zoneAwareness: {
+    enabled: true,
+  },
+  capacity: {
+    // must be an even number since the default az count is 2.
+    dataNodes: 3,
+  },
+};
+new opensearch.Domain(this, 'Domain', domainProps);
 
+/*
         const masterNodes = new CfnParameter(this, "masterNodes", {
             type: "Number",
             description: "The number of instances to use for the master node."
@@ -34,6 +50,7 @@ export class CdkOpenSearchStack extends Stack {
             version: opensearch.EngineVersion.OPENSEARCH_1_0,
             //  enableVersionUpgrade: (enableVersionUpgrade.valueAsString =="true") , // defaults to false
             enableVersionUpgrade: true, // defaults to false
+            
             enforceHttps: true,
             removalPolicy: RemovalPolicy.DESTROY,
             capacity: {
@@ -54,6 +71,7 @@ export class CdkOpenSearchStack extends Stack {
             zoneAwareness: {
                 availabilityZoneCount: availabilityZoneCount,
             },
+            
             logging: {
                 slowSearchLogEnabled: true,
                 appLogEnabled: true,
@@ -65,5 +83,10 @@ export class CdkOpenSearchStack extends Stack {
 
         const freeStorageSpace = prodDomain.metricFreeStorageSpace();
         const masterSysMemoryUtilization = prodDomain.metric('MasterSysMemoryUtilization');
+
+
+        */
     }
+    
+
 }
