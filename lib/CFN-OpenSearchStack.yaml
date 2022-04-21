@@ -122,8 +122,12 @@ Resources:
   opSubnetGroup:
     Type: 'AWS::EC2::Subnet'
     Properties:
-      DBSubnetGroupDescription: RDS subnet group
+      VpcId: !Sub 
+        - '{{resolve:ssm:/platform/sharedvpc/${Environment}/vpc_id}}'
+        - Environment: !Ref PSsmEnvironment
+      DBSubnetGroupDescription: EC2 subnet group
       SubnetIds: !Ref SubnetIds
+      
       Tags:
         - Key: 'sc:name'
           Value: !Sub ${DomainName}-${PSsmEnvironment}-subnetgroup
