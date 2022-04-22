@@ -104,8 +104,16 @@ Resources:
         ExcludeCharacters: "{}'\\*[]()`"
         GenerateStringKey: password
         SecretStringTemplate: '{"username":"master-user"}'
+      Tags:
+          - Key: 'sc:name'
+            Value: !Sub ${DomainName}-${PSsmEnvironment}-secret
+          - Key: 'sc:app-uuid'
+            Value: '{{resolve:ssm:/platform/account/app-uuid}}'
+          - Key: 'sc:env'
+            Value: '{{resolve:ssm:/platform/account/env}}'
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
+
 
   DefaultopSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -239,6 +247,13 @@ Resources:
       AdvancedOptions:
         rest.action.multi.allow_explicit_index: true
         override_main_response_version: true
+      Tags:
+          - Key: 'sc:name'
+            Value: !Sub ${DomainName}-${PSsmEnvironment}-op
+          - Key: 'sc:app-uuid'
+            Value: '{{resolve:ssm:/platform/account/app-uuid}}'
+          - Key: 'sc:env'
+            Value: '{{resolve:ssm:/platform/account/env}}'
       AdvancedSecurityOptions:
         Enabled: true
         InternalUserDatabaseEnabled: true
@@ -250,14 +265,17 @@ Resources:
               - - "{{resolve:secretsmanager:"
                 - Ref: DomainMasterUser
                 - :SecretString:password::}}
-      Tags:
-        - Key: foo
-          Value: bar
       VPCOptions:
         SubnetIds:
           - Ref: SubnetId
         SecurityGroupIds:
-          - Ref: DefaultopSecurityGroup
+          'Fn::If':
+            - IS-SG
+            - 
+              - !Ref opSecurityGroup
+            - 
+              - !Ref DefaultopSecurityGroup
+  #          - Ref: DefaultopSecurityGroup
     UpdatePolicy:
       EnableVersionUpgrade: true
     UpdateReplacePolicy: Delete
@@ -284,7 +302,13 @@ Outputs:
         - DomainEndpoint
   SecurityGroupId:
     Value:
-      Ref: DefaultopSecurityGroup
+        'Fn::If':
+          - IS-SG
+          - 
+            !Ref opSecurityGroup
+          - 
+            !Ref DefaultopSecurityGroup
+#      Ref: DefaultopSecurityGroup
   SubnetId:
     Value:
       Ref: SubnetId
