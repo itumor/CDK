@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: OpenSearchServiceDomain resource
+Description: OpenSearch is a distributed, open-source search and analytics suite used for a broad set of use cases like real-time application monitoring, log analytics, and website search.  
 Metadata:
   'AWS::CloudFormation::Interface':
     ParameterGroups:
@@ -20,7 +20,10 @@ Metadata:
       - SubnetId
       - opSecurityGroup
       - PSsmEnvironment
+      - KMSArnForSecretManager
+      - KMSArnForLogs
 
+#-------------------------------------------------------Parameters------------------------------------------------------#
 
 Parameters:
   DomainName:
@@ -49,7 +52,7 @@ Parameters:
     Description: 'The instance type for your data nodes.'
     Type: 'String'
     Default: 't3.small.search'
-    AllowedValues: ["t2.micro.search","t2.small.search","t2.medium.search","t3.small.search","t3.medium.search"]
+    AllowedValues: ["t3.small.search","t3.medium.search"]
   DedicatedMasterCount:
     Description: 'The number of dedicated master nodes (instances) to use in the Amazon ES domain (set to 0 to disable dedicated master nodes).'
     Type: Number
@@ -58,7 +61,7 @@ Parameters:
     Description: 'The instance type for your dedicated master nodes.'
     Type: 'String'
     Default: 't3.small.search'
-    AllowedValues: ["t2.micro.search","t2.small.search","t2.medium.search","t3.small.search","t3.medium.search"]
+    AllowedValues: ["t3.small.search","t3.medium.search"]
   SubDomainNameWithDot:
     Description: 'Name that is used to create the DNS entry with trailing dot, e.g. §{SubDomainNameWithDot}§{HostedZoneName}. Leave blank for naked (or apex and bare) domain. Requires ParentZoneStack parameter!'
     Type: String
@@ -85,6 +88,21 @@ Parameters:
     Default: /platform/account/env
     AllowedValues:
       - /platform/account/env
+  KMSArnForSecretManager:
+    Type: String
+    Description: Enter KMS key (symmetric) arn (Format arn:aws:kms:<region>:<account-ID>:key/<key-id>) to be used for encrypting secrets
+    ConstraintDescription: format should be arn:aws:kms:<region>:<account-ID>:key/<key-id>
+    Default: arn:aws:kms:eu-central-1:600027353764:key/cec03951-59ac-44a0-94eb-fa5ebd6bcf77
+    AllowedPattern: (^arn\:aws\:kms\:.+)
+
+  KMSArnForLogs:
+    Type: String
+    Description: Enter KMS key (symmetric) arn (Format arn:aws:kms:<region>:<account-ID>:key/<key-id>) to be used for encrypt the log data
+    ConstraintDescription: format should be arn:aws:kms:<region>:<account-ID>:key/<key-id>
+    Default: arn:aws:kms:eu-central-1:600027353764:key/096aae3c-0cac-46f1-91ae-291935b2c7c9
+    AllowedPattern: (^arn\:aws\:kms\:.+)
+    
+#---------------------------------------------------Conditions----------------------------------------------------------#
 
 Conditions:
   IS-No-SG: !Equals 
@@ -96,6 +114,8 @@ Conditions:
   HasDedicatedMasterNodes: !Not [!Equals [!Ref DedicatedMasterCount, 0]]
   HasSingleClusterInstance: !Equals [!Ref ClusterInstanceCount, '1']
 
+#-----------------------------------------------------Resources--------------------------------------------------------#
+
 Resources:
   DomainMasterUser:
     Type: AWS::SecretsManager::Secret
@@ -104,6 +124,7 @@ Resources:
         ExcludeCharacters: "{}'\\*[]()`"
         GenerateStringKey: password
         SecretStringTemplate: '{"username":"master-user"}'
+      KmsKeyId: !Ref KMSArnForSecretManager
       Tags:
           - Key: 'sc:name'
             Value: !Sub ${DomainName}-${PSsmEnvironment}-secret
@@ -114,6 +135,11 @@ Resources:
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
 
+  
+
+
+
+#-----------------SecurityGroup---------------#
 
   DefaultopSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -134,17 +160,24 @@ Resources:
         - FromPort: 443
           IpProtocol: tcp
           ToPort: 443
-          CidrIp: 0.0.0.0/0
+          CidrIp: 0.0.0.0/32
+      SecurityGroupEgress:
+        - FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443
+          CidrIp: 0.0.0.0/32
 
-
+#----------------Logs----------------#
 
   DomainSlowSearchLogs:
     Type: AWS::Logs::LogGroup
     Properties:
       RetentionInDays: 30
       LogGroupName: !Sub '/aws/opensearch/${DomainName}/DomainSlowLogs'
+      KmsKeyId: !Ref KMSArnForLogs
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
+    
 
   OpenSearchLogPolicy:
     Type: AWS::Logs::ResourcePolicy
@@ -157,31 +190,41 @@ Resources:
     Properties:
       RetentionInDays: 30
       LogGroupName: !Sub '/aws/opensearch/${DomainName}/DomainSlowIndexLogs'
+      KmsKeyId: !Ref KMSArnForLogs
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
+
 
   DomainAppLogs:
     Type: AWS::Logs::LogGroup
     Properties:
       RetentionInDays: 30
       LogGroupName: !Sub '/aws/opensearch/${DomainName}/DomainAppLogs'
+      KmsKeyId: !Ref KMSArnForLogs
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
+
 
   DomainAuditLogs:
     Type: AWS::Logs::LogGroup
     Properties:
       RetentionInDays: 30
       LogGroupName: !Sub '/aws/opensearch/${DomainName}/DomainAuditLogs'
+      KmsKeyId: !Ref KMSArnForLogs
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
 
+
+#---------------Role-----------------#
+  
   ServiceLinkedRole:
     Type: 'AWS::IAM::ServiceLinkedRole'
     Properties:
       AWSServiceName: es.amazonaws.com
       Description: 'Role for ES to access resources in my VPC'
 
+#--------------Open Search Service Domain------------------#
+  
   OpenSearchServiceDomain:
     Type: 'AWS::OpenSearchService::Domain'
     Properties:
@@ -275,7 +318,6 @@ Resources:
               - !Ref opSecurityGroup
             - 
               - !Ref DefaultopSecurityGroup
-  #          - Ref: DefaultopSecurityGroup
     UpdatePolicy:
       EnableVersionUpgrade: true
     UpdateReplacePolicy: Delete
@@ -288,6 +330,8 @@ Resources:
     - DomainAppLogs
     - DomainAuditLogs
     - ServiceLinkedRole
+
+#----------------------------------------------------Outputs---------------------------------------------------------#
 
 Outputs:
   Arn:
@@ -308,7 +352,6 @@ Outputs:
             !Ref opSecurityGroup
           - 
             !Ref DefaultopSecurityGroup
-#      Ref: DefaultopSecurityGroup
   SubnetId:
     Value:
       Ref: SubnetId

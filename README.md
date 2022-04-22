@@ -162,3 +162,4 @@ https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-open
 
 
 # aws cloudformation create-stack --stack-name opensearch --template-body file://CFN-OpenSearchStack.yaml --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
+# aws cloudformation delete-stack --stack-name opensearch 
