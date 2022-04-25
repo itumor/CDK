@@ -73,15 +73,7 @@ Parameters:
     Default: 'xsmall'
     AllowedValues:
       - xsmall
-      - small
-      - medium
-      - large
-      - xlarge
       - xsmall-mem
-      - small-mem
-      - medium-mem
-      - large-mem
-      - xlarge-mem
 
   SubDomainNameWithDot:
     Description: 'Name that is used to create the DNS entry with trailing dot, e.g. §{SubDomainNameWithDot}§{HostedZoneName}. Leave blank for naked (or apex and bare) domain. Requires ParentZoneStack parameter!'
