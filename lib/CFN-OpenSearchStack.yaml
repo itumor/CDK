@@ -9,11 +9,11 @@ Metadata:
       Parameters:
       - DomainName
       - EngineVersion
-      - EBSEnabled
+#      - EBSEnabled
       - EBSVolumeSize
       - ClusterInstanceCount
       - ClusterInstanceType
-      - DedicatedMasterCount
+#      - DedicatedMasterCount
       - DedicatedMasterType
       - SubDomainNameWithDot
 #      - SubnetIds
@@ -21,20 +21,22 @@ Metadata:
       - opSecurityGroup
       - PSsmEnvironment
       - KMSArnForSecretManager
-      - KMSArnForLogs
+#      - KMSArnForLogs
 
 #-------------------------------------------------------Parameters------------------------------------------------------#
 
 Parameters:
   DomainName:
-    Description: 'A name for the Amazon ES domain.'
+    Description: 'A name for the Amazon OpenSearch domain.'
     Type: String
     Default: 'domainname'
-  EBSEnabled:
-    Description: 'Specifies whether Amazon EBS volumes are attached to data nodes in the Amazon ES domain (some instance types come with instance store that you can use instead).'
-    Type: String
-    AllowedValues: [true, false]
-    Default: true
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: must begin with a letter and contain only alphanumeric characters.
+#  EBSEnabled:
+#    Description: 'Specifies whether Amazon EBS volumes are attached to data nodes in the Amazon ES domain (some instance types come with instance store that you can use instead).'
+#    Type: String
+#    AllowedValues: [true, false]
+#    Default: true
   EBSVolumeSize:
     Description: 'The size of the EBS volume for each data node. The minimum and maximum size of an EBS volume depends on the EBS volume type and the instance type to which it is attached.'
     Type: Number
@@ -48,6 +50,8 @@ Parameters:
     Description: 'The number of data nodes (instances) to use in the Amazon ES domain.'
     Type: Number
     Default: 1
+    MinLength: '1'
+    MaxLength: '80'
   ClusterInstanceType:
     Description: 'The instance type for your data nodes.'
     Type: 'String'
@@ -63,10 +67,10 @@ Parameters:
       - medium-mem
       - large-mem
       - xlarge-mem
-  DedicatedMasterCount:
-    Description: 'The number of dedicated master nodes (instances) to use in the Amazon ES domain (set to 0 to disable dedicated master nodes).'
-    Type: Number
-    Default: 0
+#  DedicatedMasterCount:
+#    Description: 'The number of dedicated master nodes (instances) to use in the Amazon ES domain (set to 0 to disable dedicated master nodes).'
+#    Type: Number
+#    Default: 0
   DedicatedMasterType:
     Description: 'The instance type for your dedicated master nodes.'
     Type: 'String'
@@ -108,13 +112,13 @@ Parameters:
     Default: arn:aws:kms:eu-central-1:600027353764:key/cec03951-59ac-44a0-94eb-fa5ebd6bcf77
     AllowedPattern: (^arn\:aws\:kms\:.+)
 
-  KMSArnForLogs:
-    Type: String
-    Description: Enter KMS key (symmetric) arn (Format arn:aws:kms:<region>:<account-ID>:key/<key-id>) to be used for encrypt the log data
-    ConstraintDescription: format should be arn:aws:kms:<region>:<account-ID>:key/<key-id>
-    Default: arn:aws:kms:eu-central-1:600027353764:key/096aae3c-0cac-46f1-91ae-291935b2c7c9
-    AllowedPattern: (^arn\:aws\:kms\:.+)
-    
+#  KMSArnForLogs:
+#    Type: String
+#    Description: Enter KMS key (symmetric) arn (Format arn:aws:kms:<region>:<account-ID>:key/<key-id>) to be used for encrypt the log data
+#    ConstraintDescription: format should be arn:aws:kms:<region>:<account-ID>:key/<key-id>
+#    Default: arn:aws:kms:eu-central-1:600027353764:key/096aae3c-0cac-46f1-91ae-291935b2c7c9
+#    AllowedPattern: (^arn\:aws\:kms\:.+)
+   
 #---------------------------------------------------Conditions----------------------------------------------------------#
 
 Conditions:
@@ -123,8 +127,8 @@ Conditions:
     - ""
 
   IS-SG: !Not [!Equals [!Ref opSecurityGroup, ""]]
-  HasEBSEnabled: !Equals [!Ref EBSEnabled, 'true']
-  HasDedicatedMasterNodes: !Not [!Equals [!Ref DedicatedMasterCount, 0]]
+#  HasEBSEnabled: !Equals [!Ref EBSEnabled, 'true']
+#  HasDedicatedMasterNodes: !Not [!Equals [!Ref DedicatedMasterCount, 0]]
   HasSingleClusterInstance: !Equals [!Ref ClusterInstanceCount, '1']
 
 
@@ -134,53 +138,53 @@ Mappings:
     xsmall:
       Instance: t3.small.search
       StorageType: gp2
-      MinStorage: 20
+      MinStorage: 10
       MaxStorage: 100
     small:
       Instance: t3.medium.search
       StorageType: gp2
-      MinStorage: 20
+      MinStorage: 10
       MaxStorage: 200
     medium:
       Instance: m6g.large.search
       StorageType: gp2
-      MinStorage: 20
-      MaxStorage: 400
+      MinStorage: 10
+      MaxStorage: 512
     large:
       Instance: m6g.xlarge.search
       StorageType: gp2
-      MinStorage: 100
-      MaxStorage: 1000
+      MinStorage: 10
+      MaxStorage: 1024
     xlarge:
       Instance: m6g.2xlarge.search
       StorageType: gp2
-      MinStorage: 100
-      MaxStorage: 2000
+      MinStorage: 10
+      MaxStorage: 1536
     xsmall-mem:
       Instance: r6g.large.search
       StorageType: gp2
-      MinStorage: 100
-      MaxStorage: 2000
+      MinStorage: 10
+      MaxStorage: 1024
     small-mem:
       Instance: r6g.xlarge.search
       StorageType: gp2
-      MinStorage: 100
-      MaxStorage: 4000
+      MinStorage: 10
+      MaxStorage: 1536
     medium-mem:
       Instance: r6g.2xlarge.search
       StorageType: gp2
-      MinStorage: 100
-      MaxStorage: 2000
+      MinStorage: 10
+      MaxStorage: 3072
     large-mem:
       Instance: r6g.4xlarge.search
       StorageType: gp2
-      MinStorage: 100
-      MaxStorage: 4000
+      MinStorage: 10
+      MaxStorage: 6144
     xlarge-mem:
       Instance: r6g.8xlarge.search
       StorageType: gp2
-      MinStorage: 100
-      MaxStorage: 4000
+      MinStorage: 10
+      MaxStorage: 8192
 
 #-----------------------------------------------------Resources--------------------------------------------------------#
 
@@ -202,9 +206,6 @@ Resources:
             Value: '{{resolve:ssm:/platform/account/env}}'
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
-
-  
-
 
 
 #-----------------SecurityGroup---------------#
@@ -229,11 +230,13 @@ Resources:
           IpProtocol: tcp
           ToPort: 443
           CidrIp: 0.0.0.0/32
+          Description: Open access for OpenSearch Ingress
       SecurityGroupEgress:
         - FromPort: 443
           IpProtocol: tcp
           ToPort: 443
           CidrIp: 0.0.0.0/32
+          Description: Open access for OpenSearch Egress
 
 #----------------Logs----------------#
 
@@ -242,7 +245,7 @@ Resources:
     Properties:
       RetentionInDays: 30
       LogGroupName: !Sub '/aws/opensearch/${DomainName}/DomainSlowLogs'
-      KmsKeyId: !Ref KMSArnForLogs
+#      KmsKeyId: !Ref KMSArnForLogs
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     
@@ -258,7 +261,7 @@ Resources:
     Properties:
       RetentionInDays: 30
       LogGroupName: !Sub '/aws/opensearch/${DomainName}/DomainSlowIndexLogs'
-      KmsKeyId: !Ref KMSArnForLogs
+#      KmsKeyId: !Ref KMSArnForLogs
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
 
@@ -268,7 +271,7 @@ Resources:
     Properties:
       RetentionInDays: 30
       LogGroupName: !Sub '/aws/opensearch/${DomainName}/DomainAppLogs'
-      KmsKeyId: !Ref KMSArnForLogs
+#      KmsKeyId: !Ref KMSArnForLogs
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
 
@@ -278,7 +281,7 @@ Resources:
     Properties:
       RetentionInDays: 30
       LogGroupName: !Sub '/aws/opensearch/${DomainName}/DomainAuditLogs'
-      KmsKeyId: !Ref KMSArnForLogs
+#      KmsKeyId: !Ref KMSArnForLogs
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
 
@@ -311,12 +314,15 @@ Resources:
         - !Ref ClusterInstanceType
         - Instance
         ZoneAwarenessEnabled: !If [HasSingleClusterInstance, false, true]
-      EBSOptions: !If
-      - HasEBSEnabled
-      - EBSEnabled: true
-        VolumeSize: !Ref EBSVolumeSize
-        VolumeType: gp2
-      - EBSEnabled: false
+        EBSOptions:
+          VolumeSize: !Ref EBSVolumeSize
+          VolumeType: gp2        
+#      EBSOptions: !If
+#      - HasEBSEnabled
+#      - EBSEnabled: true
+#        VolumeSize: !Ref EBSVolumeSize
+#        VolumeType: gp2
+#      - EBSEnabled: false
       AccessPolicies:
         Version: '2012-10-17'
         Statement:
