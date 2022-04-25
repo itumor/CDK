@@ -52,7 +52,17 @@ Parameters:
     Description: 'The instance type for your data nodes.'
     Type: 'String'
     Default: 't3.small.search'
-    AllowedValues: ["t3.small.search","t3.medium.search"]
+    AllowedValues:
+      - xsmall
+      - small
+      - medium
+      - large
+      - xlarge
+      - xsmall-mem
+      - small-mem
+      - medium-mem
+      - large-mem
+      - xlarge-mem
   DedicatedMasterCount:
     Description: 'The number of dedicated master nodes (instances) to use in the Amazon ES domain (set to 0 to disable dedicated master nodes).'
     Type: Number
@@ -61,7 +71,18 @@ Parameters:
     Description: 'The instance type for your dedicated master nodes.'
     Type: 'String'
     Default: 't3.small.search'
-    AllowedValues: ["t3.small.search","t3.medium.search"]
+    AllowedValues:
+      - xsmall
+      - small
+      - medium
+      - large
+      - xlarge
+      - xsmall-mem
+      - small-mem
+      - medium-mem
+      - large-mem
+      - xlarge-mem
+
   SubDomainNameWithDot:
     Description: 'Name that is used to create the DNS entry with trailing dot, e.g. §{SubDomainNameWithDot}§{HostedZoneName}. Leave blank for naked (or apex and bare) domain. Requires ParentZoneStack parameter!'
     Type: String
@@ -113,6 +134,61 @@ Conditions:
   HasEBSEnabled: !Equals [!Ref EBSEnabled, 'true']
   HasDedicatedMasterNodes: !Not [!Equals [!Ref DedicatedMasterCount, 0]]
   HasSingleClusterInstance: !Equals [!Ref ClusterInstanceCount, '1']
+
+
+#---------------------------------------------------Mappings----------------------------------------------------------#
+Mappings:
+  Plans:
+    xsmall:
+      Instance: t3.small.search
+      StorageType: gp2
+      MinStorage: 20
+      MaxStorage: 100
+    small:
+      Instance: t3.medium.search
+      StorageType: gp2
+      MinStorage: 20
+      MaxStorage: 200
+    medium:
+      Instance: m6g.large.search
+      StorageType: gp2
+      MinStorage: 20
+      MaxStorage: 400
+    large:
+      Instance: m6g.xlarge.search
+      StorageType: gp2
+      MinStorage: 100
+      MaxStorage: 1000
+    xlarge:
+      Instance: m6g.2xlarge.search
+      StorageType: gp2
+      MinStorage: 100
+      MaxStorage: 2000
+    xsmall-mem:
+      Instance: r6g.large.search
+      StorageType: gp2
+      MinStorage: 100
+      MaxStorage: 2000
+    small-mem:
+      Instance: r6g.xlarge.search
+      StorageType: gp2
+      MinStorage: 100
+      MaxStorage: 4000
+    medium-mem:
+      Instance: r6g.2xlarge.search
+      StorageType: gp2
+      MinStorage: 100
+      MaxStorage: 2000
+    large-mem:
+      Instance: r6g.4xlarge.search
+      StorageType: gp2
+      MinStorage: 100
+      MaxStorage: 4000
+    xlarge-mem:
+      Instance: r6g.8xlarge.search
+      StorageType: gp2
+      MinStorage: 100
+      MaxStorage: 4000
 
 #-----------------------------------------------------Resources--------------------------------------------------------#
 
@@ -237,7 +313,11 @@ Resources:
         DedicatedMasterEnabled: !If [HasDedicatedMasterNodes, true, false]
         DedicatedMasterType: !If [HasDedicatedMasterNodes, !Ref DedicatedMasterType, !Ref 'AWS::NoValue']
         InstanceCount: !Ref ClusterInstanceCount
-        InstanceType: !Ref ClusterInstanceType
+#        InstanceType: !Ref ClusterInstanceType
+        InstanceType: !FindInMap 
+        - Plans
+        - !Ref ClusterInstanceType
+        - Instance
         ZoneAwarenessEnabled: !If [HasSingleClusterInstance, false, true]
       EBSOptions: !If
       - HasEBSEnabled
