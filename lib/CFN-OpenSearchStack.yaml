@@ -9,11 +9,11 @@ Metadata:
       Parameters:
       - DomainName
       - EngineVersion
-#      - EBSEnabled
+      - EBSEnabled
       - EBSVolumeSize
       - ClusterInstanceCount
       - ClusterInstanceType
-#      - DedicatedMasterCount
+      - DedicatedMasterCount
       - DedicatedMasterType
       - SubDomainNameWithDot
 #      - SubnetIds
@@ -32,11 +32,11 @@ Parameters:
     Default: 'domainname'
     AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
     ConstraintDescription: must begin with a letter and contain only alphanumeric characters.
-#  EBSEnabled:
-#    Description: 'Specifies whether Amazon EBS volumes are attached to data nodes in the Amazon ES domain (some instance types come with instance store that you can use instead).'
-#    Type: String
-#    AllowedValues: [true, false]
-#    Default: true
+  EBSEnabled:
+    Description: 'Specifies whether Amazon EBS volumes are attached to data nodes in the Amazon ES domain (some instance types come with instance store that you can use instead).'
+    Type: String
+    AllowedValues: [true, false]
+    Default: true
   EBSVolumeSize:
     Description: 'The size of the EBS volume for each data node. The minimum and maximum size of an EBS volume depends on the EBS volume type and the instance type to which it is attached.'
     Type: Number
@@ -50,8 +50,8 @@ Parameters:
     Description: 'The number of data nodes (instances) to use in the Amazon ES domain.'
     Type: Number
     Default: 1
-    MinLength: '1'
-    MaxLength: '80'
+    MinValue: 1
+    MaxValue: 80
   ClusterInstanceType:
     Description: 'The instance type for your data nodes.'
     Type: 'String'
@@ -67,10 +67,12 @@ Parameters:
       - medium-mem
       - large-mem
       - xlarge-mem
-#  DedicatedMasterCount:
-#    Description: 'The number of dedicated master nodes (instances) to use in the Amazon ES domain (set to 0 to disable dedicated master nodes).'
-#    Type: Number
-#    Default: 0
+  DedicatedMasterCount:
+    Description: 'The number of dedicated master nodes (instances) to use in the Amazon ES domain (set to 0 to disable dedicated master nodes).'
+    Type: Number
+    Default: 0
+    MinValue: 0
+    MaxValue: 5
   DedicatedMasterType:
     Description: 'The instance type for your dedicated master nodes.'
     Type: 'String'
@@ -127,8 +129,8 @@ Conditions:
     - ""
 
   IS-SG: !Not [!Equals [!Ref opSecurityGroup, ""]]
-#  HasEBSEnabled: !Equals [!Ref EBSEnabled, 'true']
-#  HasDedicatedMasterNodes: !Not [!Equals [!Ref DedicatedMasterCount, 0]]
+  HasEBSEnabled: !Equals [!Ref EBSEnabled, 'true']
+  HasDedicatedMasterNodes: !Not [!Equals [!Ref DedicatedMasterCount, 0]]
   HasSingleClusterInstance: !Equals [!Ref ClusterInstanceCount, '1']
 
 
@@ -313,16 +315,13 @@ Resources:
         - Plans
         - !Ref ClusterInstanceType
         - Instance
-        ZoneAwarenessEnabled: !If [HasSingleClusterInstance, false, true]
-        EBSOptions:
-          VolumeSize: !Ref EBSVolumeSize
-          VolumeType: gp2        
-#      EBSOptions: !If
-#      - HasEBSEnabled
-#      - EBSEnabled: true
-#        VolumeSize: !Ref EBSVolumeSize
-#        VolumeType: gp2
-#      - EBSEnabled: false
+        ZoneAwarenessEnabled: !If [HasSingleClusterInstance, false, true]   
+      EBSOptions: !If
+      - HasEBSEnabled
+      - EBSEnabled: true
+        VolumeSize: !Ref EBSVolumeSize
+        VolumeType: gp2
+      - EBSEnabled: false
       AccessPolicies:
         Version: '2012-10-17'
         Statement:
