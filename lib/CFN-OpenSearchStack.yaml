@@ -51,7 +51,7 @@ Parameters:
   ClusterInstanceType:
     Description: 'The instance type for your data nodes.'
     Type: 'String'
-    Default: 't3.small.search'
+    Default: 'xsmall'
     AllowedValues:
       - xsmall
       - small
@@ -70,7 +70,7 @@ Parameters:
   DedicatedMasterType:
     Description: 'The instance type for your dedicated master nodes.'
     Type: 'String'
-    Default: 't3.small.search'
+    Default: 'xsmall'
     AllowedValues:
       - xsmall
       - small
