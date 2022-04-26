@@ -394,6 +394,7 @@ Resources:
           - Ref: opSubnetGroup
         SecurityGroupIds:
           - Ref: opSecurityGroup
+
     UpdatePolicy:
       EnableVersionUpgrade: true
     UpdateReplacePolicy: Delete
