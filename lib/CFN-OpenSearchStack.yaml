@@ -450,7 +450,7 @@ Resources:
 #          - subnet-082e89732b12fc727
 #          - subnet-09e891313642b7fc6
 #          !Split [ "," , "subnet-082e89732b12fc727,subnet-09e891313642b7fc6" ]
-#           !Split [ "," , !Sub PSsmSubnetIds ]
+#          !Split [ "," , !Sub PSsmSubnetIds ]
 #           - !Select [ 0, !Ref PSsmSubnetIds ]
 #           - !Select [ 1, !Ref PSsmSubnetIds ]
         SecurityGroupIds:
