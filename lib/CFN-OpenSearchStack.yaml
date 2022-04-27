@@ -363,7 +363,7 @@ Resources:
         DedicatedMasterCount: !If [IS-Not-Dev, !Ref DedicatedMasterCount, !Ref 'AWS::NoValue']
         DedicatedMasterEnabled: !If [IS-Not-Dev, true, false]
         DedicatedMasterType: !If [IS-Not-Dev, !FindInMap [ Plans, !Ref DedicatedMasterType, Instance ], !Ref 'AWS::NoValue']
-        InstanceCount: !Ref ClusterInstanceCount
+        InstanceCount:  !If [IS-Not-Dev, !Ref ClusterInstanceCount, 1]
         InstanceType: !FindInMap 
         - Plans
         - !Ref ClusterInstanceType
