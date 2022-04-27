@@ -22,6 +22,8 @@ Metadata:
       - PSsmEnvironment
       - KMSArnForSecretManager
 #      - KMSArnForLogs
+      - PSsmSubnetIds
+      - PSsmNRSubnetCIDRs
 
 #-------------------------------------------------------Parameters------------------------------------------------------#
 
@@ -85,17 +87,6 @@ Parameters:
     Description: 'Name that is used to create the DNS entry with trailing dot, e.g. §{SubDomainNameWithDot}§{HostedZoneName}. Leave blank for naked (or apex and bare) domain. Requires ParentZoneStack parameter!'
     Type: String
     Default: 'elasticsearch.'
-#  SubnetIds:
-#    Description: >-
-#      List of subnets in which the instance is to be placed; at least two
-#      required
-#    Type: 'List<AWS::EC2::Subnet::Id>'
-  SubnetId:
-    Description: >-
-      subnets in which the instance is to be placed
-      required
-    Type: 'AWS::EC2::Subnet::Id'
-    Default: 'subnet-082e89732b12fc727'
   opSecurityGroup:
     Description: >-
       Specify the security group to be used by OpenSearch, if not provide a default will get created
@@ -113,6 +104,21 @@ Parameters:
     ConstraintDescription: format should be arn:aws:kms:<region>:<account-ID>:key/<key-id>
     Default: arn:aws:kms:eu-central-1:600027353764:key/cec03951-59ac-44a0-94eb-fa5ebd6bcf77
     AllowedPattern: (^arn\:aws\:kms\:.+)
+  PSsmSubnetIds:
+    Description: >-
+      Subnet types in which the instance is to be placed. (possible values: /platform/sharedvpc/private_subnets or /platform/sharedvpc/nr_private_subnets)
+    Type: AWS::SSM::Parameter::Value<List<String>>
+    Default: /platform/sharedvpc/private_subnets
+    AllowedValues:
+      - /platform/sharedvpc/nr_private_subnets
+      - /platform/sharedvpc/private_subnets
+  PSsmNRSubnetCIDRs:
+    Description: >-
+      LEAVE AS IT IS - Default SG Subnet cidr ranges from non routable subnets of shared VPC.
+    Type: AWS::SSM::Parameter::Value<List<String>>
+    Default: /platform/sharedvpc/nr_private_subnets_cidrs
+    AllowedValues:
+      - /platform/sharedvpc/nr_private_subnets_cidrs
 
 #  KMSArnForLogs:
 #    Type: String
@@ -231,33 +237,33 @@ Resources:
 
 #-----------------SecurityGroup---------------#
 
-  DefaultopSecurityGroup:
-    Type: 'AWS::EC2::SecurityGroup'
-    Condition: IS-No-SG
-    Properties:
-      GroupDescription: Open access for OpenSearch
-      VpcId: !Sub 
-        - '{{resolve:ssm:/platform/sharedvpc/${Environment}/vpc_id}}'
-        - Environment: !Ref PSsmEnvironment
-      Tags:
-        - Key: 'sc:name'
-          Value: !Join ['.', [ !Ref AWS::StackName, !Ref PSsmEnvironment, !Ref AWS::Region, "sg-op", !Sub '{{resolve:ssm:/platform/sharedvpc/${PSsmEnvironment}/vpc_id}}']]
-        - Key: 'sc:app-uuid'
-          Value: '{{resolve:ssm:/platform/account/app-uuid}}'
-        - Key: 'sc:env'
-          Value: '{{resolve:ssm:/platform/account/env}}'
-      SecurityGroupIngress:
-        - FromPort: 443
-          IpProtocol: tcp
-          ToPort: 443
-          CidrIp: 0.0.0.0/32
-          Description: Open access for OpenSearch Ingress
-      SecurityGroupEgress:
-        - FromPort: 443
-          IpProtocol: tcp
-          ToPort: 443
-          CidrIp: 0.0.0.0/32
-          Description: Open access for OpenSearch Egress
+#  DefaultopSecurityGroup:
+#    Type: 'AWS::EC2::SecurityGroup'
+#    Condition: IS-No-SG
+#    Properties:
+#      GroupDescription: Open access for OpenSearch
+#      VpcId: !Sub 
+#        - '{{resolve:ssm:/platform/sharedvpc/${Environment}/vpc_id}}'
+#        - Environment: !Ref PSsmEnvironment
+#      Tags:
+#        - Key: 'sc:name'
+#          Value: !Join ['.', [ !Ref AWS::StackName, !Ref PSsmEnvironment, !Ref AWS::Region, "sg-op", !Sub '{{resolve:ssm:/platform/sharedvpc/${PSsmEnvironment}/vpc_id}}']]
+#        - Key: 'sc:app-uuid'
+#          Value: '{{resolve:ssm:/platform/account/app-uuid}}'
+#        - Key: 'sc:env'
+#          Value: '{{resolve:ssm:/platform/account/env}}'
+#      SecurityGroupIngress:
+#        - FromPort: 443
+#          IpProtocol: tcp
+#          ToPort: 443
+#          CidrIp: 0.0.0.0/32
+#          Description: Open access for OpenSearch Ingress
+#      SecurityGroupEgress:
+#        - FromPort: 443
+#          IpProtocol: tcp
+#          ToPort: 443
+#          CidrIp: 0.0.0.0/32
+#          Description: Open access for OpenSearch Egress
 
 
 
@@ -316,18 +322,9 @@ Resources:
           Value: '{{resolve:ssm:/platform/account/env}}'
 
 
-  DBSubnetGroup:
-    Type: 'AWS::RDS::DBSubnetGroup'
-    Properties:
-      DBSubnetGroupDescription: RDS subnet group
-      SubnetIds: !Ref PSsmSubnetIds
-      Tags:
-        - Key: 'sc:name'
-          Value: !Sub ${DBInstanceName}-${PSsmEnvironment}-subnetgroup
-        - Key: 'sc:app-uuid'
-          Value: '{{resolve:ssm:/platform/account/app-uuid}}'
-        - Key: 'sc:env'
-          Value: '{{resolve:ssm:/platform/account/env}}'
+
+
+ 
 
 #----------------Logs----------------#
 
@@ -476,7 +473,14 @@ Resources:
                 - :SecretString:password::}}
       VPCOptions:
         SubnetIds:
-          - Ref: SubnetId
+          !Split [ "," , !Sub PSsmSubnetIds ]
+#          - Ref: SubnetId
+#           Ref: PSsmSubnetIds
+#         Fn::Split:
+#            - ','
+#            - !Ref PSsmSubnetIds
+#          !Split [ "|" , "a|b|c" ]
+
         SecurityGroupIds:
           'Fn::If':
             - IS-SG
@@ -490,12 +494,14 @@ Resources:
     DeletionPolicy: Delete
     DependsOn:
     - DomainMasterUser
-    - DefaultopSecurityGroup
+ #   - DefaultopSecurityGroup
     - DomainSlowSearchLogs
     - DomainSlowIndexLogs
     - DomainAppLogs
     - DomainAuditLogs
     - ServiceLinkedRole
+ #   - DefaultopSecurityGroupStageProd
+ #   - DefaultopSecurityGroupDev
 
 #----------------------------------------------------Outputs---------------------------------------------------------#
 
@@ -510,18 +516,15 @@ Outputs:
       'Fn::GetAtt':
         - OpenSearchServiceDomain
         - DomainEndpoint
-  SecurityGroupId:
-    Value:
+  DBSecurityGroupID:
+      Description: 'Database security group Id, will come handy for traffic accesss'
+      Value:
         'Fn::If':
           - IS-SG
-          - 
-            !Ref opSecurityGroup
-          - 
-            !Ref DefaultopSecurityGroup
-  SubnetId:
-    Value:
-      Ref: SubnetId
+          - !Ref opSecurityGroup
+          - !If [ IS-Not-Dev, !GetAtt DefaultopSecurityGroupStageProd.GroupId ,!GetAtt DefaultopSecurityGroupDev.GroupId ]
   MasterUser:
     Value:
       Ref: DomainMasterUser
+
 
