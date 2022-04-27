@@ -16,8 +16,6 @@ Metadata:
       - DedicatedMasterCount
       - DedicatedMasterType
       - SubDomainNameWithDot
-#      - SubnetIds
-      - SubnetId
       - opSecurityGroup
       - PSsmEnvironment
       - KMSArnForSecretManager
@@ -51,7 +49,7 @@ Parameters:
   ClusterInstanceCount:
     Description: 'The number of data nodes (instances) to use in the Amazon ES domain.'
     Type: Number
-    Default: 1
+    Default: 2
     MinValue: 1
     MaxValue: 80
   ClusterInstanceType:
@@ -157,6 +155,8 @@ Conditions:
   HasDedicatedMasterNodes: !Not [!Equals [!Ref DedicatedMasterCount, 0]]
   HasSingleClusterInstance: !Equals [!Ref ClusterInstanceCount, '1']
 
+  
+
 
 
 #---------------------------------------------------Mappings----------------------------------------------------------#
@@ -235,36 +235,6 @@ Resources:
     DeletionPolicy: Delete
 
 
-#-----------------SecurityGroup---------------#
-
-#  DefaultopSecurityGroup:
-#    Type: 'AWS::EC2::SecurityGroup'
-#    Condition: IS-No-SG
-#    Properties:
-#      GroupDescription: Open access for OpenSearch
-#      VpcId: !Sub 
-#        - '{{resolve:ssm:/platform/sharedvpc/${Environment}/vpc_id}}'
-#        - Environment: !Ref PSsmEnvironment
-#      Tags:
-#        - Key: 'sc:name'
-#          Value: !Join ['.', [ !Ref AWS::StackName, !Ref PSsmEnvironment, !Ref AWS::Region, "sg-op", !Sub '{{resolve:ssm:/platform/sharedvpc/${PSsmEnvironment}/vpc_id}}']]
-#        - Key: 'sc:app-uuid'
-#          Value: '{{resolve:ssm:/platform/account/app-uuid}}'
-#        - Key: 'sc:env'
-#          Value: '{{resolve:ssm:/platform/account/env}}'
-#      SecurityGroupIngress:
-#        - FromPort: 443
-#          IpProtocol: tcp
-#          ToPort: 443
-#          CidrIp: 0.0.0.0/32
-#          Description: Open access for OpenSearch Ingress
-#      SecurityGroupEgress:
-#        - FromPort: 443
-#          IpProtocol: tcp
-#          ToPort: 443
-#          CidrIp: 0.0.0.0/32
-#          Description: Open access for OpenSearch Egress
-
 
 
 #----------------NewSecurityGroup----------------#
@@ -313,6 +283,7 @@ Resources:
       SecurityGroupEgress:
         - CidrIp: 127.0.0.1/32
           IpProtocol: "-1" 
+          Description: "SecurityGroupEgress"
       Tags:
         - Key: 'sc:name'
           Value: !Join ['.', [ !Ref AWS::StackName, !Ref PSsmEnvironment, !Ref AWS::Region, "sg-op", !Sub '{{resolve:ssm:/platform/sharedvpc/${PSsmEnvironment}/vpc_id}}']]
@@ -321,10 +292,6 @@ Resources:
         - Key: 'sc:env'
           Value: '{{resolve:ssm:/platform/account/env}}'
 
-
-
-
- 
 
 #----------------Logs----------------#
 
@@ -396,7 +363,6 @@ Resources:
         DedicatedMasterEnabled: !If [HasDedicatedMasterNodes, true, false]
         DedicatedMasterType: !If [HasDedicatedMasterNodes, !Ref DedicatedMasterType, !Ref 'AWS::NoValue']
         InstanceCount: !Ref ClusterInstanceCount
-#        InstanceType: !Ref ClusterInstanceType
         InstanceType: !FindInMap 
         - Plans
         - !Ref ClusterInstanceType
@@ -473,14 +439,19 @@ Resources:
                 - :SecretString:password::}}
       VPCOptions:
         SubnetIds:
-          !Split [ "," , !Sub PSsmSubnetIds ]
-#          - Ref: SubnetId
-#           Ref: PSsmSubnetIds
-#         Fn::Split:
-#            - ','
-#            - !Ref PSsmSubnetIds
-#          !Split [ "|" , "a|b|c" ]
-
+          'Fn::If':
+            - IS-Dev
+            - 
+              - !Select [ 0, !Ref PSsmSubnetIds ]
+            - 
+              - !Select [ 0, !Ref PSsmSubnetIds ]
+              - !Select [ 1, !Ref PSsmSubnetIds ]
+#          - subnet-082e89732b12fc727
+#          - subnet-09e891313642b7fc6
+#          !Split [ "," , "subnet-082e89732b12fc727,subnet-09e891313642b7fc6" ]
+#           !Split [ "," , !Sub PSsmSubnetIds ]
+#           - !Select [ 0, !Ref PSsmSubnetIds ]
+#           - !Select [ 1, !Ref PSsmSubnetIds ]
         SecurityGroupIds:
           'Fn::If':
             - IS-SG
@@ -494,14 +465,11 @@ Resources:
     DeletionPolicy: Delete
     DependsOn:
     - DomainMasterUser
- #   - DefaultopSecurityGroup
     - DomainSlowSearchLogs
     - DomainSlowIndexLogs
     - DomainAppLogs
     - DomainAuditLogs
     - ServiceLinkedRole
- #   - DefaultopSecurityGroupStageProd
- #   - DefaultopSecurityGroupDev
 
 #----------------------------------------------------Outputs---------------------------------------------------------#
 
