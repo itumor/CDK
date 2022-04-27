@@ -129,9 +129,28 @@ Conditions:
     - ""
 
   IS-SG: !Not [!Equals [!Ref opSecurityGroup, ""]]
+
+  IS-Not-Dev: !Not
+    - !Equals 
+      - !Ref PSsmEnvironment
+      - "development"
+  
+  IS-Dev: !Equals 
+    - !Ref PSsmEnvironment
+    - "development"
+
+  IS-No-SG-AND-Not-Dev: !And
+    - !Condition IS-No-SG
+    - !Condition IS-Not-Dev
+  
+  IS-No-SG-AND-Dev: !And
+    - !Condition IS-No-SG
+    - !Condition IS-Dev
+
   HasEBSEnabled: !Equals [!Ref EBSEnabled, 'true']
   HasDedicatedMasterNodes: !Not [!Equals [!Ref DedicatedMasterCount, 0]]
   HasSingleClusterInstance: !Equals [!Ref ClusterInstanceCount, '1']
+
 
 
 #---------------------------------------------------Mappings----------------------------------------------------------#
@@ -239,6 +258,76 @@ Resources:
           ToPort: 443
           CidrIp: 0.0.0.0/32
           Description: Open access for OpenSearch Egress
+
+
+
+#----------------NewSecurityGroup----------------#
+
+  DefaultopSecurityGroupDev:
+    Type: 'AWS::EC2::SecurityGroup'
+    Condition: IS-No-SG-AND-Dev
+    Properties:
+      GroupDescription: Open access for OpenSearch
+      VpcId: !Sub 
+        - '{{resolve:ssm:/platform/sharedvpc/${Environment}/vpc_id}}'
+        - Environment: !Ref PSsmEnvironment
+      SecurityGroupEgress:
+        - IpProtocol: tcp          
+          FromPort: 443   
+          ToPort: 443
+          CidrIp: 0.0.0.0/32
+          Description: Open access for OpenSearch Ingress
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Select [0, !Ref PSsmNRSubnetCIDRs ]
+          Description: "NR-private subnet 1 cidr range."
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Select [1, !Ref PSsmNRSubnetCIDRs ]
+          Description: "NR-private subnet 2 cidr range."
+      Tags:
+        - Key: 'sc:name'
+          Value: !Join ['.', [ !Ref AWS::StackName, !Ref PSsmEnvironment, !Ref AWS::Region, "sg-op", !Sub '{{resolve:ssm:/platform/sharedvpc/${PSsmEnvironment}/vpc_id}}']]
+        - Key: 'sc:app-uuid'
+          Value: '{{resolve:ssm:/platform/account/app-uuid}}'
+        - Key: 'sc:env'
+          Value: '{{resolve:ssm:/platform/account/env}}'
+  
+  DefaultopSecurityGroupStageProd:
+    Type: 'AWS::EC2::SecurityGroup'
+    Condition: IS-No-SG-AND-Not-Dev
+    Properties:
+      GroupDescription: Open access for OpenSearch
+      VpcId: !Sub 
+        - '{{resolve:ssm:/platform/sharedvpc/${Environment}/vpc_id}}'
+        - Environment: !Ref PSsmEnvironment
+      SecurityGroupEgress:
+        - CidrIp: 127.0.0.1/32
+          IpProtocol: "-1" 
+      Tags:
+        - Key: 'sc:name'
+          Value: !Join ['.', [ !Ref AWS::StackName, !Ref PSsmEnvironment, !Ref AWS::Region, "sg-op", !Sub '{{resolve:ssm:/platform/sharedvpc/${PSsmEnvironment}/vpc_id}}']]
+        - Key: 'sc:app-uuid'
+          Value: '{{resolve:ssm:/platform/account/app-uuid}}'
+        - Key: 'sc:env'
+          Value: '{{resolve:ssm:/platform/account/env}}'
+
+
+  DBSubnetGroup:
+    Type: 'AWS::RDS::DBSubnetGroup'
+    Properties:
+      DBSubnetGroupDescription: RDS subnet group
+      SubnetIds: !Ref PSsmSubnetIds
+      Tags:
+        - Key: 'sc:name'
+          Value: !Sub ${DBInstanceName}-${PSsmEnvironment}-subnetgroup
+        - Key: 'sc:app-uuid'
+          Value: '{{resolve:ssm:/platform/account/app-uuid}}'
+        - Key: 'sc:env'
+          Value: '{{resolve:ssm:/platform/account/env}}'
 
 #----------------Logs----------------#
 
@@ -394,7 +483,7 @@ Resources:
             - 
               - !Ref opSecurityGroup
             - 
-              - !Ref DefaultopSecurityGroup
+              - !If [IS-Not-Dev, !Ref DefaultopSecurityGroupStageProd, !Ref DefaultopSecurityGroupDev] 
     UpdatePolicy:
       EnableVersionUpgrade: true
     UpdateReplacePolicy: Delete
