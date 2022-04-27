@@ -70,7 +70,7 @@ Parameters:
   DedicatedMasterCount:
     Description: 'The number of dedicated master nodes (instances) to use in the Amazon ES domain (set to 0 to disable dedicated master nodes).'
     Type: Number
-    Default: 0
+    Default: 3
     MinValue: 0
     MaxValue: 5
   DedicatedMasterType:
@@ -152,10 +152,11 @@ Conditions:
     - !Condition IS-Dev
 
   HasEBSEnabled: !Equals [!Ref EBSEnabled, 'true']
-  HasDedicatedMasterNodes: !Not [!Equals [!Ref DedicatedMasterCount, 0]]
+ # HasDedicatedMasterNodes: !Not [!Equals [!Ref DedicatedMasterCount, 0]]
+ # HasDedicatedMasterNodes:  IS-Not-Dev
   HasSingleClusterInstance: !Equals [!Ref ClusterInstanceCount, '1']
 
-  
+
 
 
 
@@ -359,15 +360,15 @@ Resources:
       EngineVersion:
         Ref: EngineVersion
       ClusterConfig:
-        DedicatedMasterCount: !If [HasDedicatedMasterNodes, !Ref DedicatedMasterCount, !Ref 'AWS::NoValue']
-        DedicatedMasterEnabled: !If [HasDedicatedMasterNodes, true, false]
-        DedicatedMasterType: !If [HasDedicatedMasterNodes, !Ref DedicatedMasterType, !Ref 'AWS::NoValue']
+        DedicatedMasterCount: !If [IS-Not-Dev, !Ref DedicatedMasterCount, !Ref 'AWS::NoValue']
+        DedicatedMasterEnabled: !If [IS-Not-Dev, true, false]
+        DedicatedMasterType: !If [IS-Not-Dev, !FindInMap [ Plans, !Ref DedicatedMasterType, Instance ], !Ref 'AWS::NoValue']
         InstanceCount: !Ref ClusterInstanceCount
         InstanceType: !FindInMap 
         - Plans
         - !Ref ClusterInstanceType
         - Instance
-        ZoneAwarenessEnabled: !If [HasSingleClusterInstance, false, true]   
+        ZoneAwarenessEnabled: !If [IS-Not-Dev, true,false]   
       EBSOptions: !If
       - HasEBSEnabled
       - EBSEnabled: true
