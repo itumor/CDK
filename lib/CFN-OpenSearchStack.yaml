@@ -9,7 +9,6 @@ Metadata:
       Parameters:
       - DomainName
       - EngineVersion
-#      - EBSEnabled
       - EBSVolumeSize
       - ClusterInstanceCount
       - ClusterInstanceType
@@ -18,7 +17,6 @@ Metadata:
       - opSecurityGroup
       - PSsmEnvironment
       - KMSArnForSecretManager
-#      - KMSArnForLogs
       - PSsmSubnetIds
       - PSsmNRSubnetCIDRs
 
@@ -31,11 +29,6 @@ Parameters:
     Default: 'domainname'
     AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
     ConstraintDescription: must begin with a letter and contain only alphanumeric characters.
-#  EBSEnabled:
-#    Description: 'Specifies whether Amazon EBS volumes are attached to data nodes in the Amazon ES domain (some instance types come with instance store that you can use instead).'
-#    Type: String
-#    AllowedValues: [true, false]
-#    Default: true
   EBSVolumeSize:
     Description: 'The size of the EBS volume for each data node. The minimum and maximum size of an EBS volume depends on the EBS volume type and the instance type to which it is attached.'
     Type: Number
@@ -111,13 +104,6 @@ Parameters:
     Default: /platform/sharedvpc/nr_private_subnets_cidrs
     AllowedValues:
       - /platform/sharedvpc/nr_private_subnets_cidrs
-
-#  KMSArnForLogs:
-#    Type: String
-#    Description: Enter KMS key (symmetric) arn (Format arn:aws:kms:<region>:<account-ID>:key/<key-id>) to be used for encrypt the log data
-#    ConstraintDescription: format should be arn:aws:kms:<region>:<account-ID>:key/<key-id>
-#    Default: arn:aws:kms:eu-central-1:600027353764:key/096aae3c-0cac-46f1-91ae-291935b2c7c9
-#    AllowedPattern: (^arn\:aws\:kms\:.+)
    
 #---------------------------------------------------Conditions----------------------------------------------------------#
 
@@ -146,20 +132,6 @@ Conditions:
     - !Condition IS-Dev
 
   Is-mem: !Or [!Equals [ !Ref ClusterInstanceType, "xsmall-mem" ], !Equals [ !Ref ClusterInstanceType, "small-mem" ],!Equals [ !Ref ClusterInstanceType, "medium-mem" ],!Equals [ !Ref ClusterInstanceType, "large-mem" ],!Equals [ !Ref ClusterInstanceType, "xlarge-mem" ]]
-
-
- # HasEBSEnabled: !Equals [!Ref EBSEnabled, 'true']
- # HasDedicatedMasterNodes: !Not [!Equals [!Ref DedicatedMasterCount, 0]]
- # HasDedicatedMasterNodes:  IS-Not-Dev
- # HasSingleClusterInstance: !Equals [!Ref ClusterInstanceCount, '1']
-
-
- # Subnet1Exist: !Not [ !Equals [!Select [ 0, !Ref PSsmSubnetIds ], '']]
- # Subnet2Exist: !Not [ !Equals [!Select [ 1, !Ref PSsmSubnetIds ], '']]
- # Subnet3Exist: !Not [ !Equals [!Select [ 2, !Ref PSsmSubnetIds ], '']]
-
-
-
 
 #---------------------------------------------------Mappings----------------------------------------------------------#
 Mappings:
@@ -218,7 +190,7 @@ Mappings:
 #-----------------------------------------------------Resources--------------------------------------------------------#
 
 Resources:
-  DomainMasterUser:
+  DomainMasterSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
       GenerateSecretString:
@@ -300,7 +272,6 @@ Resources:
     Properties:
       RetentionInDays: 30
       LogGroupName: !Sub '/aws/opensearch/${DomainName}/DomainSlowLogs'
-#      KmsKeyId: !Ref KMSArnForLogs
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     
@@ -316,7 +287,6 @@ Resources:
     Properties:
       RetentionInDays: 30
       LogGroupName: !Sub '/aws/opensearch/${DomainName}/DomainSlowIndexLogs'
-#      KmsKeyId: !Ref KMSArnForLogs
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
 
@@ -326,7 +296,6 @@ Resources:
     Properties:
       RetentionInDays: 30
       LogGroupName: !Sub '/aws/opensearch/${DomainName}/DomainAppLogs'
-#      KmsKeyId: !Ref KMSArnForLogs
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
 
@@ -336,7 +305,6 @@ Resources:
     Properties:
       RetentionInDays: 30
       LogGroupName: !Sub '/aws/opensearch/${DomainName}/DomainAuditLogs'
-#      KmsKeyId: !Ref KMSArnForLogs
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
 
@@ -362,19 +330,12 @@ Resources:
         DedicatedMasterCount: !If [IS-Not-Dev, 3 , !Ref 'AWS::NoValue']
         DedicatedMasterEnabled: !If [IS-Not-Dev, true, false]
         DedicatedMasterType: !If [IS-Not-Dev, !If [Is-mem , !FindInMap [ Plans, xsmall-mem , Instance ],!FindInMap [ Plans, xsmall, Instance ]] , !Ref 'AWS::NoValue']
-#        DedicatedMasterType: !If [IS-Not-Dev, !FindInMap [ Plans, !Ref DedicatedMasterType, Instance ], !Ref 'AWS::NoValue']
         InstanceCount:  !If [IS-Not-Dev, !Ref ClusterInstanceCount, 1]
         InstanceType: !FindInMap 
         - Plans
         - !Ref ClusterInstanceType
         - Instance
         ZoneAwarenessEnabled: !If [IS-Not-Dev, true,false]   
-#      EBSOptions: !If
-#      - HasEBSEnabled
-#      - EBSEnabled: true
-#        VolumeSize: !Ref EBSVolumeSize
-#        VolumeType: gp2
-#      - EBSEnabled: false
       EBSOptions:
         EBSEnabled: true
         VolumeSize: !Ref EBSVolumeSize
@@ -440,7 +401,7 @@ Resources:
             Fn::Join:
               - ""
               - - "{{resolve:secretsmanager:"
-                - Ref: DomainMasterUser
+                - Ref: DomainMasterSecret
                 - :SecretString:password::}}
       VPCOptions:
         SubnetIds:
@@ -448,33 +409,7 @@ Resources:
             - IS-Dev
             - 
               - !Select [ 0, !Ref PSsmSubnetIds ]
-            -
-              - !Select [ 0, !Ref PSsmSubnetIds ]
-              - !Select [ 1, !Ref PSsmSubnetIds ]
-#              'Fn::If':
-#                - Subnet1Exist
-#                -
-#                  - !Select [ 0, !Ref PSsmSubnetIds ]
-#                  - 'Fn::If':
-#                    - Subnet2Exist
-#                    -
-#                      !Select [ 1, !Ref PSsmSubnetIds ]
-#                    - !Ref "AWS::NoValue"
-#                  - 'Fn::If':
-#                    - Subnet3Exist
-#                    -
-#                      !Select [ 2, !Ref PSsmSubnetIds ]
-#                    - !Ref "AWS::NoValue"
-
-#                - !Ref "AWS::NoValue"           
-
-#              - !Select [ 2, !Ref PSsmSubnetIds ]
-#          - subnet-082e89732b12fc727
-#          - subnet-09e891313642b7fc6
-#          !Split [ "," , "subnet-082e89732b12fc727,subnet-09e891313642b7fc6" ]
-#          !Split [ "," , !Sub PSsmSubnetIds ]
-#           - !Select [ 0, !Ref PSsmSubnetIds ]
-#           - !Select [ 1, !Ref PSsmSubnetIds ]
+            - !Ref PSsmSubnetIds
         SecurityGroupIds:
           'Fn::If':
             - IS-SG
@@ -502,15 +437,13 @@ Outputs:
       'Fn::GetAtt':
         - OpenSearchServiceDomain
         - DomainEndpoint
-  DBSecurityGroupID:
-      Description: 'Database security group Id, will come handy for traffic accesss'
+  opSecurityGroupID:
+      Description: 'OpenSearch security group Id, will come handy for traffic accesss'
       Value:
         'Fn::If':
           - IS-SG
           - !Ref opSecurityGroup
           - !If [ IS-Not-Dev, !GetAtt DefaultopSecurityGroupStageProd.GroupId ,!GetAtt DefaultopSecurityGroupDev.GroupId ]
-  MasterUser:
+  DomainMasterSecret:
     Value:
-      Ref: DomainMasterUser
-
-
+      Ref: DomainMasterSecret
