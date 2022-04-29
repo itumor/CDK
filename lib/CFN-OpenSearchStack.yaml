@@ -9,13 +9,12 @@ Metadata:
       Parameters:
       - DomainName
       - EngineVersion
-      - EBSEnabled
+#      - EBSEnabled
       - EBSVolumeSize
       - ClusterInstanceCount
       - ClusterInstanceType
-      - DedicatedMasterCount
-      - DedicatedMasterType
-      - SubDomainNameWithDot
+#      - DedicatedMasterCount
+#      - DedicatedMasterType
       - opSecurityGroup
       - PSsmEnvironment
       - KMSArnForSecretManager
@@ -32,11 +31,11 @@ Parameters:
     Default: 'domainname'
     AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
     ConstraintDescription: must begin with a letter and contain only alphanumeric characters.
-  EBSEnabled:
-    Description: 'Specifies whether Amazon EBS volumes are attached to data nodes in the Amazon ES domain (some instance types come with instance store that you can use instead).'
-    Type: String
-    AllowedValues: [true, false]
-    Default: true
+#  EBSEnabled:
+#    Description: 'Specifies whether Amazon EBS volumes are attached to data nodes in the Amazon ES domain (some instance types come with instance store that you can use instead).'
+#    Type: String
+#    AllowedValues: [true, false]
+#    Default: true
   EBSVolumeSize:
     Description: 'The size of the EBS volume for each data node. The minimum and maximum size of an EBS volume depends on the EBS volume type and the instance type to which it is attached.'
     Type: Number
@@ -55,7 +54,7 @@ Parameters:
   ClusterInstanceType:
     Description: 'The instance type for your data nodes.'
     Type: 'String'
-    Default: 'xsmall'
+    Default: 'small-mem'
     AllowedValues:
       - xsmall
       - small
@@ -67,24 +66,19 @@ Parameters:
       - medium-mem
       - large-mem
       - xlarge-mem
-  DedicatedMasterCount:
-    Description: 'The number of dedicated master nodes (instances) to use in the Amazon ES domain (set to 0 to disable dedicated master nodes).'
-    Type: Number
-    Default: 3
-    MinValue: 0
-    MaxValue: 5
-  DedicatedMasterType:
-    Description: 'The instance type for your dedicated master nodes.'
-    Type: 'String'
-    Default: 'xsmall'
-    AllowedValues:
-      - xsmall
-      - xsmall-mem
-
-  SubDomainNameWithDot:
-    Description: 'Name that is used to create the DNS entry with trailing dot, e.g. §{SubDomainNameWithDot}§{HostedZoneName}. Leave blank for naked (or apex and bare) domain. Requires ParentZoneStack parameter!'
-    Type: String
-    Default: 'elasticsearch.'
+#  DedicatedMasterCount:
+#    Description: 'The number of dedicated master nodes (instances) to use in the Amazon ES domain (set to 0 to disable dedicated master nodes).'
+#    Type: Number
+#    Default: 3
+#    MinValue: 3
+#    MaxValue: 5
+#  DedicatedMasterType:
+#    Description: 'The instance type for your dedicated master nodes.'
+#    Type: 'String'
+#    Default: 'xsmall'
+#    AllowedValues:
+#      - xsmall
+#      - xsmall-mem
   opSecurityGroup:
     Description: >-
       Specify the security group to be used by OpenSearch, if not provide a default will get created
@@ -151,11 +145,18 @@ Conditions:
     - !Condition IS-No-SG
     - !Condition IS-Dev
 
-  HasEBSEnabled: !Equals [!Ref EBSEnabled, 'true']
+  Is-mem: !Or [!Equals [ !Ref ClusterInstanceType, "xsmall-mem" ], !Equals [ !Ref ClusterInstanceType, "small-mem" ],!Equals [ !Ref ClusterInstanceType, "medium-mem" ],!Equals [ !Ref ClusterInstanceType, "large-mem" ],!Equals [ !Ref ClusterInstanceType, "xlarge-mem" ]]
+
+
+ # HasEBSEnabled: !Equals [!Ref EBSEnabled, 'true']
  # HasDedicatedMasterNodes: !Not [!Equals [!Ref DedicatedMasterCount, 0]]
  # HasDedicatedMasterNodes:  IS-Not-Dev
-  HasSingleClusterInstance: !Equals [!Ref ClusterInstanceCount, '1']
+ # HasSingleClusterInstance: !Equals [!Ref ClusterInstanceCount, '1']
 
+
+ # Subnet1Exist: !Not [ !Equals [!Select [ 0, !Ref PSsmSubnetIds ], '']]
+ # Subnet2Exist: !Not [ !Equals [!Select [ 1, !Ref PSsmSubnetIds ], '']]
+ # Subnet3Exist: !Not [ !Equals [!Select [ 2, !Ref PSsmSubnetIds ], '']]
 
 
 
@@ -234,8 +235,6 @@ Resources:
             Value: '{{resolve:ssm:/platform/account/env}}'
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
-
-
 
 
 #----------------NewSecurityGroup----------------#
@@ -360,21 +359,26 @@ Resources:
       EngineVersion:
         Ref: EngineVersion
       ClusterConfig:
-        DedicatedMasterCount: !If [IS-Not-Dev, !Ref DedicatedMasterCount, !Ref 'AWS::NoValue']
+        DedicatedMasterCount: !If [IS-Not-Dev, 3 , !Ref 'AWS::NoValue']
         DedicatedMasterEnabled: !If [IS-Not-Dev, true, false]
-        DedicatedMasterType: !If [IS-Not-Dev, !FindInMap [ Plans, !Ref DedicatedMasterType, Instance ], !Ref 'AWS::NoValue']
+        DedicatedMasterType: !If [IS-Not-Dev, !If [Is-mem , !FindInMap [ Plans, xsmall-mem , Instance ],!FindInMap [ Plans, xsmall, Instance ]] , !Ref 'AWS::NoValue']
+#        DedicatedMasterType: !If [IS-Not-Dev, !FindInMap [ Plans, !Ref DedicatedMasterType, Instance ], !Ref 'AWS::NoValue']
         InstanceCount:  !If [IS-Not-Dev, !Ref ClusterInstanceCount, 1]
         InstanceType: !FindInMap 
         - Plans
         - !Ref ClusterInstanceType
         - Instance
         ZoneAwarenessEnabled: !If [IS-Not-Dev, true,false]   
-      EBSOptions: !If
-      - HasEBSEnabled
-      - EBSEnabled: true
+#      EBSOptions: !If
+#      - HasEBSEnabled
+#      - EBSEnabled: true
+#        VolumeSize: !Ref EBSVolumeSize
+#        VolumeType: gp2
+#      - EBSEnabled: false
+      EBSOptions:
+        EBSEnabled: true
         VolumeSize: !Ref EBSVolumeSize
         VolumeType: gp2
-      - EBSEnabled: false
       AccessPolicies:
         Version: '2012-10-17'
         Statement:
@@ -444,9 +448,27 @@ Resources:
             - IS-Dev
             - 
               - !Select [ 0, !Ref PSsmSubnetIds ]
-            - 
+            -
               - !Select [ 0, !Ref PSsmSubnetIds ]
               - !Select [ 1, !Ref PSsmSubnetIds ]
+#              'Fn::If':
+#                - Subnet1Exist
+#                -
+#                  - !Select [ 0, !Ref PSsmSubnetIds ]
+#                  - 'Fn::If':
+#                    - Subnet2Exist
+#                    -
+#                      !Select [ 1, !Ref PSsmSubnetIds ]
+#                    - !Ref "AWS::NoValue"
+#                  - 'Fn::If':
+#                    - Subnet3Exist
+#                    -
+#                      !Select [ 2, !Ref PSsmSubnetIds ]
+#                    - !Ref "AWS::NoValue"
+
+#                - !Ref "AWS::NoValue"           
+
+#              - !Select [ 2, !Ref PSsmSubnetIds ]
 #          - subnet-082e89732b12fc727
 #          - subnet-09e891313642b7fc6
 #          !Split [ "," , "subnet-082e89732b12fc727,subnet-09e891313642b7fc6" ]
@@ -465,11 +487,6 @@ Resources:
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     DependsOn:
-    - DomainMasterUser
-    - DomainSlowSearchLogs
-    - DomainSlowIndexLogs
-    - DomainAppLogs
-    - DomainAuditLogs
     - ServiceLinkedRole
 
 #----------------------------------------------------Outputs---------------------------------------------------------#
